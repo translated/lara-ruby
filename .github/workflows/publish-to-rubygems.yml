@@ -13,20 +13,18 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
+      - uses: actions/checkout@v4
 
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
+      - uses: ruby/setup-ruby@v1
         with:
-          ruby-version: "3.2"
+          ruby-version: "2.6"
           bundler-cache: true
 
       - name: Run tests
         run: bundle exec rspec spec --format progress
 
-  build:
-    name: Build Ruby gem
+  publish:
+    name: Build & Publish gem
     needs: test
     if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
@@ -35,23 +33,18 @@ jobs:
       id-token: write
     environment: release
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-        with:
-          ref: ${{github.ref_name}}
+      - uses: actions/checkout@v4
 
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
+      - uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.2'
+          ruby-version: "2.6"
           bundler-cache: true
 
       - name: Build gem
-        run: |
-          gem build lara-sdk.gemspec
+        run: gem build lara-sdk.gemspec
+
+      - name: Configure RubyGems credentials (OIDC)
+        uses: rubygems/configure-rubygems-credentials@v1
 
       - name: Publish gem
-        run: |
-          gem push lara-sdk-*.gem
-        env:
-          GEM_HOST_API_KEY: oidc-${{ github.repository_owner }}
+        run: gem push lara-sdk-*.gem
