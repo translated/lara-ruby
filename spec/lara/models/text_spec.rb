@@ -109,5 +109,98 @@ RSpec.describe Lara::Models::TextResult do
       expect(result.adapted_to_matches).to be_nil
       expect(result.glossaries_matches).to be_nil
     end
+
+    it "handles empty array matches" do
+      h = {
+        "translation" => "Ok",
+        "source_language" => "en",
+        "content_type" => "text/plain",
+        "adapted_to_matches" => [],
+        "glossaries_matches" => []
+      }
+      result = described_class.from_hash(h)
+      expect(result.adapted_to_matches).to eq([])
+      expect(result.glossaries_matches).to eq([])
+    end
+
+    it "handles nested array matches (multi-segment)" do
+      h = {
+        "translation" => %w[Ciao mondo],
+        "source_language" => "en",
+        "content_type" => "text/plain",
+        "adapted_to_matches" => [
+          [{ "memory" => "m1", "language" => "en", "sentence" => "Hello", "translation" => "Ciao" }],
+          [{ "memory" => "m1", "language" => "en", "sentence" => "world", "translation" => "mondo" }]
+        ]
+      }
+      result = described_class.from_hash(h)
+      expect(result.adapted_to_matches).to be_an(Array)
+      expect(result.adapted_to_matches.size).to eq(2)
+      expect(result.adapted_to_matches.first).to be_an(Array)
+      expect(result.adapted_to_matches.first.first).to be_a(Lara::Models::NGMemoryMatch)
+    end
+
+    it "handles non-array matches value" do
+      h = {
+        "translation" => "Ok",
+        "source_language" => "en",
+        "content_type" => "text/plain",
+        "adapted_to_matches" => "invalid"
+      }
+      result = described_class.from_hash(h)
+      expect(result.adapted_to_matches).to be_nil
+    end
+  end
+end
+
+RSpec.describe Lara::Models::NGMemoryMatch do
+  it "accepts required and optional attributes" do
+    m = described_class.new(memory: "mem_1", language: "en", sentence: "Hi", translation: "Ciao", tuid: "t1")
+    expect(m.memory).to eq("mem_1")
+    expect(m.tuid).to eq("t1")
+    expect(m.language).to eq("en")
+    expect(m.sentence).to eq("Hi")
+    expect(m.translation).to eq("Ciao")
+  end
+end
+
+RSpec.describe Lara::Models::NGGlossaryMatch do
+  it "accepts required attributes" do
+    g = described_class.new(glossary: "gls_1", language: "en", term: "hello", translation: "ciao")
+    expect(g.glossary).to eq("gls_1")
+    expect(g.language).to eq("en")
+    expect(g.term).to eq("hello")
+    expect(g.translation).to eq("ciao")
+  end
+end
+
+RSpec.describe Lara::Models::DetectPrediction do
+  it "accepts language and confidence" do
+    p = described_class.new(language: "en", confidence: 0.95)
+    expect(p.language).to eq("en")
+    expect(p.confidence).to eq(0.95)
+  end
+end
+
+RSpec.describe Lara::Models::DetectResult do
+  it "builds predictions from hashes" do
+    r = described_class.new(
+      language: "en",
+      content_type: "text/plain",
+      predictions: [
+        { "language" => "en", "confidence" => 0.9 },
+        { "language" => "de", "confidence" => 0.05 }
+      ]
+    )
+    expect(r.language).to eq("en")
+    expect(r.content_type).to eq("text/plain")
+    expect(r.predictions.size).to eq(2)
+    expect(r.predictions.first).to be_a(Lara::Models::DetectPrediction)
+    expect(r.predictions.first.language).to eq("en")
+  end
+
+  it "defaults predictions to empty" do
+    r = described_class.new(language: "en", content_type: "text/plain")
+    expect(r.predictions).to eq([])
   end
 end

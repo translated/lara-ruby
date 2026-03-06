@@ -42,4 +42,15 @@ end
 
 RSpec.configure do |config|
   config.include ClientHelpers
+
+  config.before(:each) do
+    stub_request(:post, %r{/v2/auth\z}).to_return(
+      status: 200,
+      body: { "token" => "fake-jwt-token" }.to_json,
+      headers: {
+        "Content-Type" => "application/json",
+        "x-lara-refresh-token" => "fake-refresh-token"
+      }
+    )
+  end
 end

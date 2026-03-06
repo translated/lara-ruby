@@ -18,7 +18,7 @@ RSpec.describe Lara::Translator do
   end
 
   def stub_languages(content)
-    stub_request(:post, "#{base_url}/languages").to_return(
+    stub_request(:get, "#{base_url}/v2/languages").to_return(
       status: 200,
       body: { "content" => content }.to_json,
       headers: { "Content-Type" => "application/json" }
@@ -28,9 +28,6 @@ RSpec.describe Lara::Translator do
   describe "#initialize" do
     it "accepts credentials object" do
       creds = Lara::Credentials.new("id", "secret")
-      stub_request(:post, %r{#{Regexp.escape(base_url)}/languages}).to_return(
-        body: { "content" => [] }.to_json, headers: { "Content-Type" => "application/json" }
-      )
       t = described_class.new(credentials: creds)
       expect(t.client).to be_a(Lara::Client)
       expect(t.memories).to be_a(Lara::Memories)
@@ -39,9 +36,6 @@ RSpec.describe Lara::Translator do
     end
 
     it "accepts access_key_id and access_key_secret" do
-      stub_request(:post, %r{#{Regexp.escape(base_url)}/}).to_return(
-        body: { "content" => [] }.to_json, headers: { "Content-Type" => "application/json" }
-      )
       t = described_class.new(access_key_id: "id", access_key_secret: "secret")
       expect(t.client).to be_a(Lara::Client)
     end
@@ -50,12 +44,12 @@ RSpec.describe Lara::Translator do
       expect do
         described_class.new(access_key_id: "id")
       end.to raise_error(ArgumentError,
-                         /credentials or access_key_id/)
+                         /must be provided/)
       expect do
         described_class.new(access_key_secret: "secret")
       end.to raise_error(ArgumentError,
-                         /credentials or access_key_id/)
-      expect { described_class.new }.to raise_error(ArgumentError, /credentials or access_key_id/)
+                         /must be provided/)
+      expect { described_class.new }.to raise_error(ArgumentError, /must be provided/)
     end
   end
 
@@ -116,6 +110,47 @@ RSpec.describe Lara::Translator do
     end
   end
 
+  describe "#detect" do
+    it "returns DetectResult with language and predictions" do
+      stub_request(:post, "#{base_url}/v2/detect").to_return(
+        status: 200,
+        body: { "content" => {
+          "language" => "en",
+          "content_type" => "text/plain",
+          "predictions" => [
+            { "language" => "en", "confidence" => 0.95 },
+            { "language" => "de", "confidence" => 0.03 }
+          ]
+        } }.to_json,
+        headers: { "Content-Type" => "application/json" }
+      )
+      result = translator.detect("Hello world")
+      expect(result).to be_a(Lara::Models::DetectResult)
+      expect(result.language).to eq("en")
+      expect(result.content_type).to eq("text/plain")
+      expect(result.predictions.size).to eq(2)
+      expect(result.predictions.first.language).to eq("en")
+      expect(result.predictions.first.confidence).to eq(0.95)
+    end
+
+    it "sends hint and passlist when provided" do
+      stub_request(:post, "#{base_url}/v2/detect").to_return(
+        status: 200,
+        body: { "content" => {
+          "language" => "it",
+          "content_type" => "text/plain",
+          "predictions" => []
+        } }.to_json,
+        headers: { "Content-Type" => "application/json" }
+      )
+      translator.detect("Ciao", hint: "it", passlist: %w[it en])
+      expect(WebMock).to(have_requested(:post, "#{base_url}/v2/detect").with do |req|
+        body = JSON.parse(req.body)
+        body["hint"] == "it" && body["passlist"] == %w[it en]
+      end)
+    end
+  end
+
   describe "#get_languages" do
     it "returns list of supported language codes" do
       stub_languages(%w[en-US it-IT fr-FR])
@@ -126,14 +161,25 @@ RSpec.describe Lara::Translator do
 
   describe "attr_readers" do
     it "exposes client, memories, glossaries, documents" do
-      stub_request(:post, %r{#{Regexp.escape(base_url)}/}).to_return(
-        body: { "content" => [] }.to_json, headers: { "Content-Type" => "application/json" }
-      )
       t = described_class.new(access_key_id: "a", access_key_secret: "b")
       expect(t.client).to be_a(Lara::Client)
       expect(t.memories).to be_a(Lara::Memories)
       expect(t.glossaries).to be_a(Lara::Glossaries)
       expect(t.documents).to be_a(Lara::Documents)
+    end
+
+    it "exposes images and audio" do
+      t = described_class.new(access_key_id: "a", access_key_secret: "b")
+      expect(t.images).to be_a(Lara::Images)
+      expect(t.audio).to be_a(Lara::AudioTranslator)
+    end
+  end
+
+  describe "#initialize with auth_token" do
+    it "accepts auth_token directly" do
+      token = Lara::AuthToken.new("jwt", "refresh")
+      t = described_class.new(auth_token: token)
+      expect(t.client).to be_a(Lara::Client)
     end
   end
 end

@@ -1,0 +1,15 @@
+{
+  "content": {
+    "id": "aud_4Ef5Gh6Ij7Kl8Mn9Op0Qr",
+    "status": "translated",
+    "target": "it",
+    "filename": "test.mp3",
+    "source": "en-US",
+    "created_at": "2024-01-15T10:00:00Z",
+    "updated_at": "2024-01-15T10:05:00Z",
+    "options": null,
+    "translated_seconds": 120.5,
+    "total_seconds": 120.5,
+    "error_reason": null
+  }
+}

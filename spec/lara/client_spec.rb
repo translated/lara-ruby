@@ -7,14 +7,14 @@ RSpec.describe Lara::Client do
   let(:base_url) { "https://api.laratranslate.com" }
   let(:client) { described_class.new(credentials, base_url: base_url) }
 
-  def stub_api(method_override, path, response_body:, content_type: "application/json",
+  def stub_api(method, path, response_body:, content_type: "application/json",
                status: 200)
     url = if path.start_with?("http")
             path
           else
             "#{base_url}#{path.start_with?('/') ? path : "/#{path}"}"
           end
-    stub_request(:post, url).to_return(
+    stub_request(method.downcase.to_sym, url).to_return(
       status: status,
       body: response_body.is_a?(Hash) ? response_body.to_json : response_body,
       headers: { "Content-Type" => content_type }
@@ -42,7 +42,7 @@ RSpec.describe Lara::Client do
     it "normalizes path with leading slash" do
       stub_api("GET", "/languages", response_body: { "content" => [] })
       client.get("languages")
-      expect(WebMock).to have_requested(:post, "#{base_url}/languages")
+      expect(WebMock).to have_requested(:get, "#{base_url}/languages")
     end
   end
 
@@ -86,26 +86,102 @@ RSpec.describe Lara::Client do
 
     it "returns raw body for CSV content-type" do
       glossary_id = "gls_1Bc2De3Fg4Hi5Jk6Lm7No"
-      stub_api("GET", "/glossaries/#{glossary_id}/export", response_body: "term,translation\nhello,ciao",
-                                              content_type: "text/csv")
+      stub_request(:get, "#{base_url}/glossaries/#{glossary_id}/export")
+        .with(query: { "content_type" => "csv/table-uni" })
+        .to_return(status: 200, body: "term,translation\nhello,ciao",
+                   headers: { "Content-Type" => "text/csv" })
       result = client.get("/glossaries/#{glossary_id}/export", params: { content_type: "csv/table-uni" })
       expect(result).to eq("term,translation\nhello,ciao")
     end
   end
 
   describe "request headers" do
-    it "sends X-HTTP-Method-Override for get" do
+    it "uses correct HTTP method for get requests" do
       stub_api("GET", "/languages", response_body: { "content" => [] })
       client.get("/languages")
-      expect(WebMock).to have_requested(:post, "#{base_url}/languages")
-        .with(headers: { "X-HTTP-Method-Override" => "GET" })
+      expect(WebMock).to have_requested(:get, "#{base_url}/languages")
     end
 
-    it "sends Authorization with Lara prefix" do
+    it "sends Authorization with Bearer prefix" do
       stub_api("POST", "/translate", response_body: { "content" => {} })
       client.post("/translate", body: { q: "x", target: "it" })
       expect(WebMock).to(have_requested(:post, "#{base_url}/translate")
-        .with { |req| req.headers["Authorization"]&.start_with?("Lara test-id:") })
+        .with { |req| req.headers["Authorization"]&.start_with?("Bearer ") })
+    end
+  end
+
+  describe "authentication" do
+    it "initializes with AuthToken and skips authenticate" do
+      token = Lara::AuthToken.new("jwt-token", "refresh-token")
+      c = described_class.new(token, base_url: base_url)
+      stub_api("GET", "/test", response_body: { "content" => "ok" })
+      result = c.get("/test")
+      expect(result).to eq("ok")
+      expect(WebMock).not_to have_requested(:post, %r{/v2/auth})
+    end
+
+    it "raises ArgumentError for invalid auth_method" do
+      expect { described_class.new("invalid") }.to raise_error(ArgumentError, /auth_method/)
+    end
+
+    it "retries on 401 jwt expired by refreshing token" do
+      stub_request(:post, "#{base_url}/test").to_return(
+        { status: 401,
+          body: { "error" => { "type" => "AuthError", "message" => "jwt expired" } }.to_json,
+          headers: { "Content-Type" => "application/json" } },
+        { status: 200,
+          body: { "content" => "success" }.to_json,
+          headers: { "Content-Type" => "application/json" } }
+      )
+      stub_request(:post, "#{base_url}/v2/auth/refresh").to_return(
+        status: 200,
+        body: { "token" => "new-jwt" }.to_json,
+        headers: { "Content-Type" => "application/json", "x-lara-refresh-token" => "new-refresh" }
+      )
+      result = client.post("/test", body: { q: "x" })
+      expect(result).to eq("success")
+    end
+
+    it "raises non-jwt-expired 401 without retrying" do
+      stub_request(:post, "#{base_url}/test").to_return(
+        status: 401,
+        body: { "error" => { "type" => "AuthError", "message" => "invalid token" } }.to_json,
+        headers: { "Content-Type" => "application/json" }
+      )
+      expect { client.post("/test", body: { q: "x" }) }.to raise_error(Lara::LaraApiError) do |e|
+        expect(e.status_code).to eq(401)
+        expect(e.message).to include("invalid token")
+      end
+    end
+
+    it "returns raw_response body when raw_response is true" do
+      stub_request(:post, "#{base_url}/v2/images/translate").to_return(
+        status: 200,
+        body: "raw-binary-data",
+        headers: { "Content-Type" => "image/png" }
+      )
+      result = client.post("/v2/images/translate", body: { target: "it" }, raw_response: true)
+      expect(result).to eq("raw-binary-data")
+    end
+  end
+
+  describe "streaming" do
+    it "parses NDJSON streaming response when callback given" do
+      stream_body = "{\"content\":{\"translation\":\"partial\"}}\n{\"content\":{\"translation\":\"Ciao\"}}\n"
+      stub_api("POST", "/translate", response_body: stream_body)
+      results = []
+      client.post("/translate", body: { q: "Hello", target: "it", reasoning: true }) do |partial|
+        results << partial
+      end
+      expect(results.size).to eq(2)
+      expect(results.last).to eq("translation" => "Ciao")
+    end
+
+    it "returns last result from streaming response" do
+      stream_body = "{\"content\":{\"translation\":\"Ciao\"}}\n"
+      stub_api("POST", "/translate", response_body: stream_body)
+      result = client.post("/translate", body: { q: "Hello", target: "it", reasoning: true })
+      expect(result).to eq("translation" => "Ciao")
     end
   end
 end

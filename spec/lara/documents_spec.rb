@@ -24,12 +24,14 @@ RSpec.describe Lara::Documents do
   describe "#upload" do
     it "fetches upload-url, uploads to S3, posts document and returns Document" do
       upload_url_response = { "url" => "https://s3-fake.example.com/upload", "fields" => { "key" => "s3key-1" } }
-      stub_request(:post, "#{base_url}/documents/upload-url").to_return(
-        status: 200,
-        body: { "content" => upload_url_response }.to_json,
-        headers: { "Content-Type" => "application/json" }
-      )
-      stub_request(:post, "#{base_url}/documents").to_return(
+      stub_request(:get, "#{base_url}/v2/documents/upload-url")
+        .with(query: hash_including({}))
+        .to_return(
+          status: 200,
+          body: { "content" => upload_url_response }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+      stub_request(:post, "#{base_url}/v2/documents").to_return(
         status: 200,
         body: { "content" => doc_content }.to_json,
         headers: { "Content-Type" => "application/json" }
@@ -48,12 +50,14 @@ RSpec.describe Lara::Documents do
 
     it "sends X-No-Trace when no_trace true" do
       upload_url_response = { "url" => "https://s3-fake.example.com/upload", "fields" => { "key" => "k1" } }
-      stub_request(:post, "#{base_url}/documents/upload-url").to_return(
-        status: 200,
-        body: { "content" => upload_url_response }.to_json,
-        headers: { "Content-Type" => "application/json" }
-      )
-      stub_request(:post, "#{base_url}/documents").to_return(
+      stub_request(:get, "#{base_url}/v2/documents/upload-url")
+        .with(query: hash_including({}))
+        .to_return(
+          status: 200,
+          body: { "content" => upload_url_response }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+      stub_request(:post, "#{base_url}/v2/documents").to_return(
         status: 200,
         body: { "content" => doc_content }.to_json,
         headers: { "Content-Type" => "application/json" }
@@ -62,14 +66,14 @@ RSpec.describe Lara::Documents do
         f.rewind
         documents.upload(file_path: f.path, filename: "x.docx", target: "it", no_trace: true)
         expect(WebMock).to have_requested(:post,
-                                          "#{base_url}/documents").with(headers: { "X-No-Trace" => "true" })
+                                          "#{base_url}/v2/documents").with(headers: { "X-No-Trace" => "true" })
       end
     end
   end
 
   describe "#status" do
     it "returns Document" do
-      stub_request(:post, "#{base_url}/documents/#{document_id}").to_return(
+      stub_request(:get, "#{base_url}/v2/documents/#{document_id}").to_return(
         status: 200,
         body: { "content" => doc_content }.to_json,
         headers: { "Content-Type" => "application/json" }
@@ -84,7 +88,7 @@ RSpec.describe Lara::Documents do
   describe "#download" do
     it "fetches download-url and returns S3 download body" do
       download_url = "https://s3-fake.example.com/download/#{document_id}"
-      stub_request(:post, "#{base_url}/documents/#{document_id}/download-url").to_return(
+      stub_request(:get, "#{base_url}/v2/documents/#{document_id}/download-url").to_return(
         status: 200,
         body: { "content" => { "url" => download_url } }.to_json,
         headers: { "Content-Type" => "application/json" }
@@ -99,22 +103,24 @@ RSpec.describe Lara::Documents do
     it "uploads, polls until translated, downloads and returns bytes" do
       upload_url_response = { "url" => "https://s3-fake.example.com/upload", "fields" => { "key" => "k1" } }
       download_url = "https://s3-fake.example.com/download/#{document_id}"
-      stub_request(:post, "#{base_url}/documents/upload-url").to_return(
-        status: 200,
-        body: { "content" => upload_url_response }.to_json,
-        headers: { "Content-Type" => "application/json" }
-      )
-      stub_request(:post, "#{base_url}/documents").to_return(
-        status: 200,
-        body: { "content" => doc_content.merge("status" => "translated") }.to_json,
-        headers: { "Content-Type" => "application/json" }
-      )
-      stub_request(:post, "#{base_url}/documents/#{document_id}").to_return(
+      stub_request(:get, "#{base_url}/v2/documents/upload-url")
+        .with(query: hash_including({}))
+        .to_return(
+          status: 200,
+          body: { "content" => upload_url_response }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+      stub_request(:post, "#{base_url}/v2/documents").to_return(
         status: 200,
         body: { "content" => doc_content.merge("status" => "translated") }.to_json,
         headers: { "Content-Type" => "application/json" }
       )
-      stub_request(:post, "#{base_url}/documents/#{document_id}/download-url").to_return(
+      stub_request(:get, "#{base_url}/v2/documents/#{document_id}").to_return(
+        status: 200,
+        body: { "content" => doc_content.merge("status" => "translated") }.to_json,
+        headers: { "Content-Type" => "application/json" }
+      )
+      stub_request(:get, "#{base_url}/v2/documents/#{document_id}/download-url").to_return(
         status: 200,
         body: { "content" => { "url" => download_url } }.to_json,
         headers: { "Content-Type" => "application/json" }
@@ -129,18 +135,20 @@ RSpec.describe Lara::Documents do
 
     it "raises LaraApiError when status becomes error" do
       upload_url_response = { "url" => "https://s3-fake.example.com/upload", "fields" => { "key" => "k1" } }
-      stub_request(:post, "#{base_url}/documents/upload-url").to_return(
-        status: 200,
-        body: { "content" => upload_url_response }.to_json,
-        headers: { "Content-Type" => "application/json" }
-      )
-      stub_request(:post, "#{base_url}/documents").to_return(
+      stub_request(:get, "#{base_url}/v2/documents/upload-url")
+        .with(query: hash_including({}))
+        .to_return(
+          status: 200,
+          body: { "content" => upload_url_response }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+      stub_request(:post, "#{base_url}/v2/documents").to_return(
         status: 200,
         body: { "content" => doc_content.merge("id" => document_id,
                                                "status" => "initialized") }.to_json,
         headers: { "Content-Type" => "application/json" }
       )
-      stub_request(:post, "#{base_url}/documents/#{document_id}").to_return(
+      stub_request(:get, "#{base_url}/v2/documents/#{document_id}").to_return(
         status: 200,
         body: { "content" => doc_content.merge("id" => document_id, "status" => "error",
                                                "error_reason" => "Conversion failed") }.to_json,

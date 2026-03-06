@@ -9,23 +9,23 @@ on:
     branches: [main, master]
 
 jobs:
-#  test:
-#    name: Test
-#    runs-on: ubuntu-latest
-#    steps:
-#      - uses: actions/checkout@v4
-#
-#      - uses: ruby/setup-ruby@v1
-#        with:
-#          ruby-version: "2.6"
-#          bundler-cache: true
-#
-#      - name: Run tests
-#        run: bundle exec rspec spec --format progress
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "2.6"
+          bundler-cache: true
+
+      - name: Run tests
+        run: bundle exec rspec spec --format progress
 
   publish:
     name: Build & Publish gem
-#    needs: test
+    needs: test
     if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     permissions:
