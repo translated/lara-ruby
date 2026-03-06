@@ -1,0 +1,34 @@
+/.bundle/
+/.yardoc
+/_yardoc/
+/coverage/
+/doc/
+/pkg/
+/spec/reports/
+/tmp/
+
+# rspec failure tracking
+.rspec_status
+
+# IDE files
+.vscode/
+.idea/
+*.iml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Gem files
+*.gem
+
+# Environment files
+.env
+.env.local
+
+# Log files
+*.log
+
+# Bundled gems
+vendor/bundle/
+/Gemfile.lock

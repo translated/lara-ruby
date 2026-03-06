@@ -1,0 +1,13 @@
+{
+  "content": {
+    "id": "mem_0Ab1Cd2Ef3Gh4Ij5Kl6Mn",
+    "name": "Test Memory",
+    "owner_id": "acc_1XyZ2Ab3Cd4Ef5Gh6Ij7Kl",
+    "created_at": "2024-01-15T10:00:00Z",
+    "updated_at": "2024-01-15T10:00:00Z",
+    "external_id": "ext_3De4Fg5Hi6Jk7Lm8No9Pq",
+    "secret": null,
+    "collaborators_count": 0,
+    "shared_at": null
+  }
+}

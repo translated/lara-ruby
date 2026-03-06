@@ -1,0 +1,15 @@
+{
+  "content": {
+    "id": "doc_2Cd3Ef4Gh5Ij6Kl7Mn8Op",
+    "status": "translated",
+    "target": "it",
+    "filename": "test.docx",
+    "source": "en-US",
+    "created_at": "2024-01-15T10:00:00Z",
+    "updated_at": "2024-01-15T10:05:00Z",
+    "options": null,
+    "translated_chars": 1000,
+    "total_chars": 1000,
+    "error_reason": null
+  }
+}
