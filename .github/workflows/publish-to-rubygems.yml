@@ -44,7 +44,7 @@ jobs:
         run: gem build lara-sdk.gemspec
 
       - name: Configure RubyGems credentials (OIDC)
-        uses: rubygems/configure-rubygems-credentials@v1
+        uses: rubygems/configure-rubygems-credentials@v1.0.0
 
       - name: Publish gem
         run: gem push lara-sdk-*.gem
