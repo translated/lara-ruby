@@ -54,12 +54,13 @@ module Lara
     # @param style [String,nil]
     # @param reasoning [Boolean] When true with a block, yields partial results during reasoning
     # @param headers [Hash,nil]
+    # @param metadata [String, Hash, nil]
     # @yield [Lara::Models::TextResult] Partial translation result (only when reasoning is true)
     # @return [Lara::Models::TextResult] Final translation result
     def translate(text, target:, source: nil, source_hint: nil, adapt_to: nil, glossaries: nil,
                   instructions: nil, content_type: nil, multiline: true, timeout_ms: nil,
                   priority: nil, use_cache: nil, cache_ttl_s: nil, no_trace: false, verbose: false,
-                  style: nil, reasoning: false, headers: nil, &callback)
+                  style: nil, reasoning: false, headers: nil, metadata: nil, &callback)
       q = normalize_text_input(text)
 
       use_cache_value = case use_cache
@@ -84,7 +85,8 @@ module Lara
         cache_ttl: cache_ttl_s,
         verbose: verbose,
         style: style,
-        reasoning: reasoning
+        reasoning: reasoning,
+        metadata: metadata
       }.compact
 
       request_headers = {}
