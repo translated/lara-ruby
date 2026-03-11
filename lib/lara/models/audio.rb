@@ -4,6 +4,16 @@ require_relative "base"
 
 module Lara
   module Models
+    module VoiceGender
+      MALE = "male"
+      FEMALE = "female"
+      ALL = [MALE, FEMALE].freeze
+
+      def self.valid?(value)
+        ALL.include?(value)
+      end
+    end
+
     module AudioStatus
       INITIALIZED = "initialized"
       ANALYZING   = "analyzing"

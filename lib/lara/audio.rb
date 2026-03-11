@@ -25,7 +25,7 @@ module Lara
     # Uploads an audio file to S3 and creates a translation job.
     # @return [Lara::Models::Audio]
     def upload(file_path:, filename:, target:, source: nil, adapt_to: nil, glossaries: nil,
-               no_trace: false, style: nil)
+               no_trace: false, style: nil, voice_gender: nil)
       response_data = @client.get("/v2/audio/upload-url", params: { filename: filename })
       url = response_data["url"]
       fields = response_data["fields"]
@@ -38,7 +38,8 @@ module Lara
         source: source,
         adapt_to: adapt_to,
         glossaries: glossaries,
-        style: style
+        style: style,
+        voice_gender: voice_gender
       }.compact
 
       headers = {}
@@ -67,9 +68,10 @@ module Lara
     # Translates an audio file end-to-end
     # @return [String] translated audio bytes
     def translate(file_path:, filename:, target:, source: nil, adapt_to: nil, glossaries: nil,
-                  no_trace: false, style: nil)
+                  no_trace: false, style: nil, voice_gender: nil)
       audio = upload(file_path: file_path, filename: filename, target: target, source: source,
-                     adapt_to: adapt_to, glossaries: glossaries, no_trace: no_trace, style: style)
+                     adapt_to: adapt_to, glossaries: glossaries, no_trace: no_trace, style: style,
+                     voice_gender: voice_gender)
 
       max_wait_time = 60 * 15 # 15 minutes
       start = Time.now
