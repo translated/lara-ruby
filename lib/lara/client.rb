@@ -7,6 +7,7 @@ require "openssl"
 require "base64"
 require "digest"
 require "uri"
+require "monitor"
 
 module Lara
   # This class is used to interact with Lara via the REST API.
@@ -31,7 +32,7 @@ module Lara
       @connection_timeout = connection_timeout
       @read_timeout = read_timeout
       @extra_headers = {}
-      @auth_mutex = Mutex.new
+      @auth_mutex = Monitor.new
 
       @connection = build_connection
     end
@@ -93,23 +94,37 @@ module Lara
       make_request(method, path, body: body, files: files, headers: headers, params: params,
                    raw_response: raw_response, &callback)
     rescue LaraApiError => e
-      # Auto-refresh token on 401 with jwt expired
-      raise unless e.status_code == 401 && e.message.include?("jwt expired")
+      raise unless e.status_code == 401
 
-      refresh_token
-      # Retry once with new token
+      @auth_mutex.synchronize { refresh_or_reauthenticate }
       make_request(method, path, body: body, files: files, headers: headers, params: params,
                    raw_response: raw_response, &callback)
     end
 
     def ensure_valid_token
       @auth_mutex.synchronize do
-        return if @auth_token
+        return if @auth_token && !@auth_token.token_expired?
 
-        raise LaraError, "No authentication method available" unless @credentials
-
-        @auth_token = authenticate
+        refresh_or_reauthenticate
       end
+    end
+
+    def refresh_or_reauthenticate
+      if @auth_token&.refresh_token && !@auth_token.refresh_token.empty?
+        begin
+          do_refresh
+          return
+        rescue StandardError
+          raise unless @credentials
+        end
+      end
+
+      if @credentials
+        @auth_token = authenticate
+        return
+      end
+
+      raise LaraError, "No authentication method available for token renewal"
     end
 
     def authenticate
@@ -143,47 +158,37 @@ module Lara
       raise LaraApiError.from_response(response) unless response.success?
 
       data = JSON.parse(response.body)
-      refresh_token = response.headers["x-lara-refresh-token"]
+      refresh_token_value = response.headers["x-lara-refresh-token"]
 
-      raise LaraError, "Missing refresh token in authentication response" unless refresh_token
+      raise LaraError, "Missing refresh token in authentication response" unless refresh_token_value
 
-      AuthToken.new(data["token"], refresh_token)
+      AuthToken.new(data["token"], refresh_token_value)
     end
 
-    def refresh_token
-      @auth_mutex.synchronize do
-        return unless @auth_token
+    def do_refresh
+      raise LaraError, "No refresh token available" unless @auth_token&.refresh_token
 
-        conn = Faraday.new(url: @base_url) do |c|
-          c.adapter Faraday.default_adapter
-        end
-
-        response = conn.post("/v2/auth/refresh") do |req|
-          req.headers = {
-            "Date" => Time.now.utc.strftime("%a, %d %b %Y %H:%M:%S GMT"),
-            "X-Lara-SDK-Name" => "lara-ruby",
-            "X-Lara-SDK-Version" => Lara::VERSION,
-            "Authorization" => "Bearer #{@auth_token&.refresh_token}"
-          }
-        end
-
-        if response.success?
-          data = JSON.parse(response.body)
-          refresh_token = response.headers["x-lara-refresh-token"]
-
-          if refresh_token
-            @auth_token = AuthToken.new(data["token"], refresh_token)
-          else
-            # Refresh failed, force re-authentication
-            @auth_token = nil
-            ensure_valid_token
-          end
-        else
-          # Refresh failed, force re-authentication
-          @auth_token = nil
-          ensure_valid_token
-        end
+      conn = Faraday.new(url: @base_url) do |c|
+        c.adapter Faraday.default_adapter
       end
+
+      response = conn.post("/v2/auth/refresh") do |req|
+        req.headers = {
+          "Date" => Time.now.utc.strftime("%a, %d %b %Y %H:%M:%S GMT"),
+          "X-Lara-SDK-Name" => "lara-ruby",
+          "X-Lara-SDK-Version" => Lara::VERSION,
+          "Authorization" => "Bearer #{@auth_token.refresh_token}"
+        }
+      end
+
+      raise LaraApiError.from_response(response) unless response.success?
+
+      data = JSON.parse(response.body)
+      refresh_token_value = response.headers["x-lara-refresh-token"]
+
+      raise LaraError, "Missing refresh token in refresh response" unless refresh_token_value
+
+      @auth_token = AuthToken.new(data["token"], refresh_token_value)
     end
 
     def make_request(method, path, body: nil, files: nil, headers: nil, params: nil, raw_response: false, &callback)

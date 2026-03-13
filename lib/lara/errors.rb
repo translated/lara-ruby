@@ -17,15 +17,16 @@ module Lara
   class LaraApiError < LaraError
     attr_reader :type
 
-    # Builds an error from an HTTP response with JSON body:
-    # { "error": { "type": "...", "message": "..." } }
+    # Builds an error from an HTTP response with JSON body.
+    # Supports both { "error": { "type": "...", "message": "..." } }
+    # and { "type": "...", "message": "..." } response formats.
     def self.from_response(response)
       data = begin
         JSON.parse(response.body)
       rescue StandardError
         {}
       end
-      error = data["error"] || {}
+      error = data["error"] || data
       error_type = error["type"] || "UnknownError"
       error_message = error["message"] || "An unknown error occurred"
       new(response.status, error_type, error_message)
