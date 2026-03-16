@@ -52,5 +52,14 @@ RSpec.configure do |config|
         "x-lara-refresh-token" => "fake-refresh-token"
       }
     )
+
+    stub_request(:post, %r{/v2/auth/refresh\z}).to_return(
+      status: 200,
+      body: { "token" => "fake-jwt-token" }.to_json,
+      headers: {
+        "Content-Type" => "application/json",
+        "x-lara-refresh-token" => "fake-refresh-token"
+      }
+    )
   end
 end

@@ -112,7 +112,9 @@ RSpec.describe Lara::Client do
 
   describe "authentication" do
     it "initializes with AuthToken and skips authenticate" do
-      token = Lara::AuthToken.new("jwt-token", "refresh-token")
+      payload = Base64.urlsafe_encode64({ "exp" => (Time.now.to_f + 3600).to_i }.to_json, padding: false)
+      fake_jwt = "eyJhbGciOiJIUzI1NiJ9.#{payload}.fakesig"
+      token = Lara::AuthToken.new(fake_jwt, "refresh-token")
       c = described_class.new(token, base_url: base_url)
       stub_api("GET", "/test", response_body: { "content" => "ok" })
       result = c.get("/test")
