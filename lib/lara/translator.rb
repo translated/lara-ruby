@@ -115,11 +115,31 @@ module Lara
       body[:passlist] = passlist if passlist&.any?
       body = body.compact
 
-      result = @client.post("/v2/detect", body: body)
+      result = @client.post("/v2/detect/language", body: body)
       Lara::Models::DetectResult.new(
         language: result["language"],
         content_type: result["content_type"],
         predictions: result["predictions"] || []
+      )
+    end
+
+    VALID_CONTENT_TYPES = %w[text/plain text/html text/xml application/xliff+xml].freeze
+
+    # Detects profanities in the given text.
+    # @param text [String] Text to check for profanities
+    # @param language [String] Language code (e.g. "en")
+    # @param content_type [String] One of "text/plain", "text/html", "text/xml", "application/xliff+xml"
+    # @return [Lara::Models::ProfanityDetectResult]
+    def detect_profanities(text, language:, content_type: "text/plain")
+      unless VALID_CONTENT_TYPES.include?(content_type)
+        raise ArgumentError, "Invalid content_type '#{content_type}'. Must be one of: #{VALID_CONTENT_TYPES.join(', ')}"
+      end
+
+      body = { text: text, language: language, content_type: content_type }
+      result = @client.post("/v2/detect/profanities", body: body)
+      Lara::Models::ProfanityDetectResult.new(
+        masked_text: result["masked_text"],
+        profanities: result["profanities"] || []
       )
     end
 
