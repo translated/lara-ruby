@@ -55,12 +55,14 @@ module Lara
     # @param reasoning [Boolean] When true with a block, yields partial results during reasoning
     # @param headers [Hash,nil]
     # @param metadata [String, Hash, nil]
+    # @param profanity_filter [String,nil] One of "detect", "avoid", "hide"
     # @yield [Lara::Models::TextResult] Partial translation result (only when reasoning is true)
     # @return [Lara::Models::TextResult] Final translation result
     def translate(text, target:, source: nil, source_hint: nil, adapt_to: nil, glossaries: nil,
                   instructions: nil, content_type: nil, multiline: true, timeout_ms: nil,
                   priority: nil, use_cache: nil, cache_ttl_s: nil, no_trace: false, verbose: false,
-                  style: nil, reasoning: false, headers: nil, metadata: nil, &callback)
+                  style: nil, reasoning: false, headers: nil, metadata: nil,
+                  profanity_filter: nil, &callback)
       q = normalize_text_input(text)
 
       use_cache_value = case use_cache
@@ -86,7 +88,8 @@ module Lara
         verbose: verbose,
         style: style,
         reasoning: reasoning,
-        metadata: metadata
+        metadata: metadata,
+        profanity_filter: profanity_filter
       }.compact
 
       request_headers = {}

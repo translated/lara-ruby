@@ -39,6 +39,35 @@ module Lara
       end
     end
 
+    class DetectedProfanity < Base
+      attr_reader :text, :start_char_index, :end_char_index, :score
+
+      def initialize(text:, start_char_index:, end_char_index:, score:)
+        super()
+        @text = text
+        @start_char_index = start_char_index
+        @end_char_index = end_char_index
+        @score = score
+      end
+    end
+
+    class ProfanityDetectResult < Base
+      attr_reader :masked_text, :profanities
+
+      def initialize(masked_text:, profanities: [])
+        super()
+        @masked_text = masked_text
+        @profanities = profanities.map do |p|
+          DetectedProfanity.new(
+            text: p["text"] || p[:text],
+            start_char_index: p["start_char_index"] || p[:start_char_index],
+            end_char_index: p["end_char_index"] || p[:end_char_index],
+            score: p["score"] || p[:score]
+          )
+        end
+      end
+    end
+
     class DetectPrediction < Base
       attr_reader :language, :confidence
 
@@ -63,7 +92,8 @@ module Lara
     class TextResult < Base
       attr_reader :content_type, :source_language, :translation,
                   :adapted_to, :glossaries,
-                  :adapted_to_matches, :glossaries_matches
+                  :adapted_to_matches, :glossaries_matches,
+                  :profanities
 
       def self.from_hash(hash)
         return nil unless hash.is_a?(Hash)
@@ -78,6 +108,7 @@ module Lara
 
         adapted_to_matches = convert_matches(hash["adapted_to_matches"], NGMemoryMatch)
         glossaries_matches = convert_matches(hash["glossaries_matches"], NGGlossaryMatch)
+        profanities = convert_profanities(hash["profanities"])
 
         new(
           content_type: hash["content_type"],
@@ -86,12 +117,13 @@ module Lara
           adapted_to: hash["adapted_to"],
           glossaries: hash["glossaries"],
           adapted_to_matches: adapted_to_matches,
-          glossaries_matches: glossaries_matches
+          glossaries_matches: glossaries_matches,
+          profanities: profanities
         )
       end
 
       def initialize(content_type:, source_language:, translation:, adapted_to: nil, glossaries: nil,
-                     adapted_to_matches: nil, glossaries_matches: nil)
+                     adapted_to_matches: nil, glossaries_matches: nil, profanities: nil)
         super()
         @content_type = content_type
         @source_language = source_language
@@ -100,6 +132,7 @@ module Lara
         @glossaries = glossaries
         @adapted_to_matches = adapted_to_matches
         @glossaries_matches = glossaries_matches
+        @profanities = profanities
       end
 
       class << self
@@ -116,6 +149,26 @@ module Lara
             value.map { |arr| arr.map { |h| build_match(klass, h) } }
           else
             value.map { |h| build_match(klass, h) }
+          end
+        end
+
+        def convert_profanities(value)
+          return nil if value.nil?
+
+          if value.is_a?(Hash)
+            ProfanityDetectResult.new(
+              masked_text: value["masked_text"],
+              profanities: value["profanities"] || []
+            )
+          elsif value.is_a?(Array)
+            value.map do |v|
+              next nil if v.nil?
+
+              ProfanityDetectResult.new(
+                masked_text: v["masked_text"],
+                profanities: v["profanities"] || []
+              )
+            end
           end
         end
 

@@ -96,19 +96,36 @@ def main
     puts "Original: This is a comprehensive translation example"
     puts "Italian (with all options): #{result6.translation}\n"
 
-    # Example 7: Get available languages
+    # Example 7: Translation with profanity filter
+    puts "=== Translation with Profanity Filter ==="
+    profanity_text = "Don't be such a tool."
+    result7 = lara.translate(profanity_text, target: "it-IT", source: "en-US", profanity_filter: "detect")
+    puts "Original: #{profanity_text}"
+    puts "Detect mode: #{result7.translation}"
+    if result7.profanities
+      puts "Masked text: #{result7.profanities.masked_text}"
+      puts "Profanities found: #{result7.profanities.profanities.length}"
+    end
+
+    result7b = lara.translate(profanity_text, target: "it-IT", source: "en-US", profanity_filter: "hide")
+    puts "Hide mode: #{result7b.translation}"
+
+    result7c = lara.translate(profanity_text, target: "it-IT", source: "en-US", profanity_filter: "avoid")
+    puts "Avoid mode: #{result7c.translation}\n"
+
+    # Example 8: Get available languages
     puts "=== Available Languages ==="
     languages = lara.get_languages
     puts "Supported languages: #{languages.inspect}"
 
-    # Example 8: Detect language of a given text
+    # Example 9: Detect language of a given text
     puts "=== Language Detection ==="
     detect_result = lara.detect("Hola, ¿cómo estás?")
     puts "Text: Hola, ¿cómo estás?"
     puts "Detected Language: #{detect_result.language}"
     puts "Content Type: #{detect_result.content_type}\n"
 
-    # Example 9: Translation with reasoning
+    # Example 10: Translation with reasoning
     puts "=== Translation with Reasoning ==="
     result10 = lara.translate(
       "Wonderful cavernous interior in a central but quiet and private area!",
@@ -120,7 +137,7 @@ def main
     end
     puts "Final result: #{result10.translation}\n"
 
-    # Example 10: Detect languages with hint and passlist
+    # Example 11: Detect languages with hint and passlist
     puts "=== Language Detection with Hint and Passlist ==="
     detect_result = lara.detect("Hola, ¿cómo estás?", hint: "es", passlist: %w[es pt it])
     puts "Text: Hola, ¿cómo estás?"
