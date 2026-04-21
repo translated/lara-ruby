@@ -112,7 +112,7 @@ RSpec.describe Lara::Translator do
 
   describe "#detect" do
     it "returns DetectResult with language and predictions" do
-      stub_request(:post, "#{base_url}/v2/detect").to_return(
+      stub_request(:post, "#{base_url}/v2/detect/language").to_return(
         status: 200,
         body: { "content" => {
           "language" => "en",
@@ -134,7 +134,7 @@ RSpec.describe Lara::Translator do
     end
 
     it "sends hint and passlist when provided" do
-      stub_request(:post, "#{base_url}/v2/detect").to_return(
+      stub_request(:post, "#{base_url}/v2/detect/language").to_return(
         status: 200,
         body: { "content" => {
           "language" => "it",
@@ -144,7 +144,7 @@ RSpec.describe Lara::Translator do
         headers: { "Content-Type" => "application/json" }
       )
       translator.detect("Ciao", hint: "it", passlist: %w[it en])
-      expect(WebMock).to(have_requested(:post, "#{base_url}/v2/detect").with do |req|
+      expect(WebMock).to(have_requested(:post, "#{base_url}/v2/detect/language").with do |req|
         body = JSON.parse(req.body)
         body["hint"] == "it" && body["passlist"] == %w[it en]
       end)
