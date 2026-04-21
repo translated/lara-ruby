@@ -232,6 +232,30 @@ result = lara.translate(
 )
 ```
 
+#### Quality Estimation
+
+Use `quality_estimation()` to score how well a translation matches its source. Pass a single sentence/translation pair to get a single result, or two parallel arrays to get one result per pair.
+
+```ruby
+# Single pair
+single = lara.quality_estimation(
+  source: "en-US",
+  target: "it-IT",
+  sentence: "Hello, how are you today?",
+  translation: "Ciao, come stai oggi?"
+)
+puts single.score # e.g. 0.768
+
+# Batch
+batch = lara.quality_estimation(
+  source: "en-US",
+  target: "it-IT",
+  sentence: ["Good morning.", "The weather is nice."],
+  translation: ["Buongiorno.", "Il tempo è bello."]
+)
+puts batch.map(&:score).inspect # e.g. [0.751, 0.713]
+```
+
 ### 📖 Document Translation
 #### Simple document translation
 

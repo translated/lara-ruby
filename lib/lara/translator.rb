@@ -149,6 +149,28 @@ module Lara
       )
     end
 
+    # Estimates translation quality for a sentence pair (or batch of pairs).
+    # @param source [String]
+    # @param target [String]
+    # @param sentence [String, Array<String>]
+    # @param translation [String, Array<String>]
+    # @return [Lara::Models::QualityEstimationResult, Array<Lara::Models::QualityEstimationResult>]
+    def quality_estimation(source:, target:, sentence:, translation:)
+      body = {
+        source: source,
+        target: target,
+        sentence: sentence,
+        translation: translation
+      }
+
+      result = @client.post("/v2/detect/quality-estimation", body: body)
+      if result.is_a?(Array)
+        result.map { |r| Lara::Models::QualityEstimationResult.new(score: r["score"] || r[:score]) }
+      else
+        Lara::Models::QualityEstimationResult.new(score: result["score"] || result[:score])
+      end
+    end
+
     # Lists supported language codes.
     def get_languages
       @client.get("/v2/languages")

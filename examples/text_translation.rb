@@ -214,6 +214,26 @@ def main
     detect_result = lara.detect("Hola, ¿cómo estás?", hint: "es", passlist: %w[es pt it])
     puts "Text: Hola, ¿cómo estás?"
     puts "Detected Language: #{detect_result.language}"
+
+    # Example 12: Quality estimation for a single sentence pair
+    puts "=== Quality Estimation: single sentence ==="
+    qe_single = lara.quality_estimation(
+      source: "en-US",
+      target: "it-IT",
+      sentence: "Hello, how are you today?",
+      translation: "Ciao, come stai oggi?"
+    )
+    puts "Score: #{qe_single.score}\n"
+
+    # Example 13: Quality estimation for a batch of sentence pairs
+    puts "=== Quality Estimation: batch ==="
+    qe_batch = lara.quality_estimation(
+      source: "en-US",
+      target: "it-IT",
+      sentence: ["Good morning.", "The weather is nice."],
+      translation: ["Buongiorno.", "Il tempo è bello."]
+    )
+    puts "Scores: #{qe_batch.map(&:score).join(', ')}\n"
   rescue StandardError => e
     puts "Error: #{e.message}"
   end

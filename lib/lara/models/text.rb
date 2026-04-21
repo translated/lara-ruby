@@ -137,6 +137,15 @@ module Lara
       end
     end
 
+    class QualityEstimationResult < Base
+      attr_reader :score
+
+      def initialize(score:)
+        super()
+        @score = score
+      end
+    end
+
     class TextResult < Base
       attr_reader :content_type, :source_language, :translation,
                   :adapted_to, :glossaries,
