@@ -226,8 +226,14 @@ module Lara
     end
 
     def parse_json(body)
-      parsed = body.nil? || body.empty? ? {} : JSON.parse(body)
-      parsed.is_a?(Hash) && parsed.key?("content") ? parsed["content"] : parsed
+      return {} if body.nil? || body.empty?
+
+      parsed = JSON.parse(body)
+      if parsed.is_a?(Hash) && parsed.key?("content")
+        inner = parsed["content"]
+        return inner if inner.is_a?(Hash) || inner.is_a?(Array)
+      end
+      parsed
     end
 
     def parse_stream_response(body, &block)

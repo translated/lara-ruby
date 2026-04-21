@@ -68,6 +68,54 @@ module Lara
       end
     end
 
+    class StyleguideChange < Base
+      attr_reader :id, :original_translation, :refined_translation, :explanation
+
+      def initialize(id:, original_translation:, refined_translation:, explanation:)
+        super()
+        @id = id
+        @original_translation = original_translation
+        @refined_translation = refined_translation
+        @explanation = explanation
+      end
+
+      def to_s
+        "StyleguideChange{id='#{id}', explanation='#{explanation}'}"
+      end
+    end
+
+    class StyleguideResults < Base
+      attr_reader :original_translation, :changes
+
+      def initialize(original_translation:, changes: [])
+        super()
+        @original_translation = original_translation
+        @changes = changes
+      end
+
+      def to_s
+        "StyleguideResults{changes=#{changes&.size || 0}}"
+      end
+    end
+
+    class Styleguide < Base
+      attr_reader :id, :name, :content, :owner_id, :created_at, :updated_at
+
+      def initialize(id:, name:, content: nil, owner_id: nil, created_at: nil, updated_at: nil, **_kwargs)
+        super()
+        @id = id
+        @name = name
+        @content = content
+        @owner_id = owner_id
+        @created_at = Base.parse_time(created_at)
+        @updated_at = Base.parse_time(updated_at)
+      end
+
+      def to_s
+        "Styleguide{id='#{id}', name='#{name}'}"
+      end
+    end
+
     class DetectPrediction < Base
       attr_reader :language, :confidence
 
@@ -93,7 +141,7 @@ module Lara
       attr_reader :content_type, :source_language, :translation,
                   :adapted_to, :glossaries,
                   :adapted_to_matches, :glossaries_matches,
-                  :profanities
+                  :profanities, :styleguide_results
 
       def self.from_hash(hash)
         return nil unless hash.is_a?(Hash)
@@ -109,6 +157,7 @@ module Lara
         adapted_to_matches = convert_matches(hash["adapted_to_matches"], NGMemoryMatch)
         glossaries_matches = convert_matches(hash["glossaries_matches"], NGGlossaryMatch)
         profanities = convert_profanities(hash["profanities"])
+        styleguide_results = convert_styleguide_results(hash["styleguide_results"])
 
         new(
           content_type: hash["content_type"],
@@ -118,12 +167,14 @@ module Lara
           glossaries: hash["glossaries"],
           adapted_to_matches: adapted_to_matches,
           glossaries_matches: glossaries_matches,
-          profanities: profanities
+          profanities: profanities,
+          styleguide_results: styleguide_results
         )
       end
 
       def initialize(content_type:, source_language:, translation:, adapted_to: nil, glossaries: nil,
-                     adapted_to_matches: nil, glossaries_matches: nil, profanities: nil)
+                     adapted_to_matches: nil, glossaries_matches: nil, profanities: nil,
+                     styleguide_results: nil)
         super()
         @content_type = content_type
         @source_language = source_language
@@ -133,6 +184,7 @@ module Lara
         @adapted_to_matches = adapted_to_matches
         @glossaries_matches = glossaries_matches
         @profanities = profanities
+        @styleguide_results = styleguide_results
       end
 
       class << self
@@ -170,6 +222,26 @@ module Lara
               )
             end
           end
+        end
+
+        def convert_styleguide_results(value)
+          return nil if value.nil?
+          return nil unless value.is_a?(Hash)
+
+          original_translation = value["original_translation"]
+          changes = (value["changes"] || []).map do |c|
+            StyleguideChange.new(
+              id: c["id"],
+              original_translation: c["original_translation"],
+              refined_translation: c["refined_translation"],
+              explanation: c["explanation"]
+            )
+          end
+
+          StyleguideResults.new(
+            original_translation: original_translation,
+            changes: changes
+          )
         end
 
         def build_match(klass, h)

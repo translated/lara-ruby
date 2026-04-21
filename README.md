@@ -14,6 +14,7 @@ All major translation features are accessible, making it easy to integrate and c
 - **Audio Translation**: Translate audio files with status monitoring
 - **Translation Memory**: Store and reuse translations for consistency
 - **Glossaries**: Enforce terminology standards across translations
+- **Styleguides**: Apply custom translation style rules with detailed change reasoning
 - **Language Detection**: Automatic source language identification
 - **Advanced Options**: Translation instructions and more
 
@@ -81,6 +82,7 @@ export LARA_ACCESS_KEY_SECRET="your-access-key-secret"
   - TextBlocks translation (mixed translatable/non-translatable content)
   - Auto-detect source language
   - Advanced translation options
+  - Translation with styleguides
   - Get available languages
 
 ```bash
@@ -444,6 +446,55 @@ csv_data = lara.glossaries.export("gls_1A2b3C4d5E6f7G8h9I0jKl",
 counts = lara.glossaries.counts("gls_1A2b3C4d5E6f7G8h9I0jKl")
 ```
 
+### 🎨 Styleguides
+
+Styleguides let you apply custom translation style rules. They can be listed and retrieved through the SDK.
+
+```ruby
+# List all styleguides
+styleguides = lara.styleguides.list
+
+# Get a specific styleguide by ID
+styleguide = lara.styleguides.get("stg_1A2b3C4d5E6f7G8h9I0jKl")
+```
+
+#### Translate with a styleguide
+
+```ruby
+result = lara.translate(
+  "Hello, world!",
+  target: "it-IT",
+  source: "en-US",
+  styleguide_id: "stg_1A2b3C4d5E6f7G8h9I0jKl"  # Replace with actual styleguide ID
+)
+```
+
+#### Styleguide reasoning
+
+Enable reasoning to see what the styleguide changed and why:
+
+```ruby
+result = lara.translate(
+  "Hello, world!",
+  target: "it-IT",
+  source: "en-US",
+  styleguide_id: "stg_1A2b3C4d5E6f7G8h9I0jKl",
+  styleguide_reasoning: true,
+  styleguide_explanation_language: "en-US"
+)
+
+sg_results = result.styleguide_results
+if sg_results
+  puts "Original translation: #{sg_results.original_translation}"
+
+  sg_results.changes.each do |change|
+    puts "Before: #{change.original_translation}"
+    puts "After:  #{change.refined_translation}"
+    puts "Why:    #{change.explanation}"
+  end
+end
+```
+
 ### Translation Options
 
 ```ruby
@@ -461,6 +512,9 @@ result = lara.translate(
   timeout_ms: 10000,                        # Request timeout in milliseconds
   no_trace: false,                          # Disable request tracing
   verbose: false,                           # Enable verbose response
+  styleguide_id: "stg_id",                 # Styleguide ID to apply
+  styleguide_reasoning: true,              # Enable styleguide change reasoning
+  styleguide_explanation_language: "en-US", # Language for change explanations
 )
 ```
 

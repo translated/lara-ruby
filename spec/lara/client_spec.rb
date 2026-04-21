@@ -116,9 +116,9 @@ RSpec.describe Lara::Client do
       fake_jwt = "eyJhbGciOiJIUzI1NiJ9.#{payload}.fakesig"
       token = Lara::AuthToken.new(fake_jwt, "refresh-token")
       c = described_class.new(token, base_url: base_url)
-      stub_api("GET", "/test", response_body: { "content" => "ok" })
+      stub_api("GET", "/test", response_body: { "result" => "ok" })
       result = c.get("/test")
-      expect(result).to eq("ok")
+      expect(result).to eq("result" => "ok")
       expect(WebMock).not_to have_requested(:post, %r{/v2/auth})
     end
 
@@ -132,7 +132,7 @@ RSpec.describe Lara::Client do
           body: { "error" => { "type" => "AuthError", "message" => "jwt expired" } }.to_json,
           headers: { "Content-Type" => "application/json" } },
         { status: 200,
-          body: { "content" => "success" }.to_json,
+          body: { "result" => "success" }.to_json,
           headers: { "Content-Type" => "application/json" } }
       )
       stub_request(:post, "#{base_url}/v2/auth/refresh").to_return(
@@ -141,7 +141,7 @@ RSpec.describe Lara::Client do
         headers: { "Content-Type" => "application/json", "x-lara-refresh-token" => "new-refresh" }
       )
       result = client.post("/test", body: { q: "x" })
-      expect(result).to eq("success")
+      expect(result).to eq("result" => "success")
     end
 
     it "raises non-jwt-expired 401 without retrying" do

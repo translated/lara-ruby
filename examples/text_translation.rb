@@ -11,6 +11,7 @@ require "lara"
 # - TextBlocks translation (mixed translatable/non-translatable content)
 # - Auto-detect source language
 # - Advanced translation options
+# - Translation with styleguides
 # - Get available languages
 # - Language detection
 
@@ -113,19 +114,90 @@ def main
     result7c = lara.translate(profanity_text, target: "it-IT", source: "en-US", profanity_filter: "avoid")
     puts "Avoid mode: #{result7c.translation}\n"
 
-    # Example 8: Get available languages
+    # Example 8: List available styleguides
+    puts "=== List Available Styleguides ==="
+    styleguide_id = nil
+    styleguides = lara.styleguides.list
+    puts "Total styleguides: #{styleguides.size}"
+    styleguides.each do |sg|
+      puts "  - #{sg.name} (ID: #{sg.id})"
+    end
+    styleguide_id = styleguides.first&.id if styleguides.any?
+    puts
+
+    # Example 9: Get a specific styleguide by ID
+    if styleguide_id
+      puts "=== Get Styleguide Details ==="
+      styleguide = lara.styleguides.get(styleguide_id)
+      if styleguide
+        puts "Name: #{styleguide.name}"
+        puts "ID: #{styleguide.id}"
+        puts "Owner: #{styleguide.owner_id}"
+        puts "Created: #{styleguide.created_at}"
+        puts "Updated: #{styleguide.updated_at}"
+      end
+      puts
+    end
+
+    # Example 10: Translate with a styleguide
+    if styleguide_id
+      puts "=== Translate with Styleguide ==="
+      result_sg = lara.translate(
+        "Our team is excited to announce that the new feature is now available for all users.",
+        target: "it-IT",
+        source: "en-US",
+        styleguide_id: styleguide_id
+      )
+      puts "Original: Our team is excited to announce that the new feature is now available for all users."
+      puts "Italian (with styleguide): #{result_sg.translation}\n"
+    end
+
+    # Example 11: Translate with styleguide reasoning
+    if styleguide_id
+      puts "=== Translate with Styleguide Reasoning ==="
+      result_sgr = lara.translate(
+        "Please submit the required documentation before the deadline.",
+        target: "it-IT",
+        source: "en-US",
+        styleguide_id: styleguide_id,
+        styleguide_reasoning: true,
+        styleguide_explanation_language: "en-US"
+      )
+      puts "Original: Please submit the required documentation before the deadline."
+      puts "Italian (with styleguide): #{result_sgr.translation}"
+
+      sg_results = result_sgr.styleguide_results
+      if sg_results
+        puts "Original translation (before styleguide): #{sg_results.original_translation}"
+
+        if sg_results.changes && !sg_results.changes.empty?
+          puts "Changes applied: #{sg_results.changes.size}"
+          sg_results.changes.each do |change|
+            puts "  Change ID: #{change.id}"
+            puts "  Before: #{change.original_translation}"
+            puts "  After:  #{change.refined_translation}"
+            puts "  Why:    #{change.explanation}"
+          end
+        else
+          puts "No changes were needed — translation already matches the styleguide."
+        end
+      end
+      puts
+    end
+
+    # Example 12: Get available languages
     puts "=== Available Languages ==="
     languages = lara.get_languages
     puts "Supported languages: #{languages.inspect}"
 
-    # Example 9: Detect language of a given text
+    # Example 13: Detect language of a given text
     puts "=== Language Detection ==="
     detect_result = lara.detect("Hola, ¿cómo estás?")
     puts "Text: Hola, ¿cómo estás?"
     puts "Detected Language: #{detect_result.language}"
     puts "Content Type: #{detect_result.content_type}\n"
 
-    # Example 10: Translation with reasoning
+    # Example 14: Translation with reasoning
     puts "=== Translation with Reasoning ==="
     result10 = lara.translate(
       "Wonderful cavernous interior in a central but quiet and private area!",
@@ -137,7 +209,7 @@ def main
     end
     puts "Final result: #{result10.translation}\n"
 
-    # Example 11: Detect languages with hint and passlist
+    # Example 15: Detect languages with hint and passlist
     puts "=== Language Detection with Hint and Passlist ==="
     detect_result = lara.detect("Hola, ¿cómo estás?", hint: "es", passlist: %w[es pt it])
     puts "Text: Hola, ¿cómo estás?"

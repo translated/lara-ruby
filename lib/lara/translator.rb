@@ -28,12 +28,13 @@ module Lara
                                         connection_timeout: connection_timeout, read_timeout: read_timeout)
       @memories = Memories.new(@client)
       @glossaries = Glossaries.new(@client)
+      @styleguides = Styleguides.new(@client)
       @documents = Documents.new(@client)
       @images = Images.new(@client)
       @audio = AudioTranslator.new(@client)
     end
 
-    attr_reader :client, :memories, :glossaries, :documents, :images, :audio
+    attr_reader :client, :memories, :glossaries, :styleguides, :documents, :images, :audio
 
     # Translates text with optional tuning parameters.
     # @param text [String, Array<String>, Array<Lara::Models::TextBlock>]
@@ -62,7 +63,9 @@ module Lara
                   instructions: nil, content_type: nil, multiline: true, timeout_ms: nil,
                   priority: nil, use_cache: nil, cache_ttl_s: nil, no_trace: false, verbose: false,
                   style: nil, reasoning: false, headers: nil, metadata: nil,
-                  profanity_filter: nil, &callback)
+                  profanity_filter: nil,
+                  styleguide_id: nil, styleguide_reasoning: nil,
+                  styleguide_explanation_language: nil, &callback)
       q = normalize_text_input(text)
 
       use_cache_value = case use_cache
@@ -89,7 +92,10 @@ module Lara
         style: style,
         reasoning: reasoning,
         metadata: metadata,
-        profanity_filter: profanity_filter
+        profanity_filter: profanity_filter,
+        styleguide_id: styleguide_id,
+        styleguide_reasoning: styleguide_reasoning,
+        styleguide_explanation_language: styleguide_explanation_language
       }.compact
 
       request_headers = {}
