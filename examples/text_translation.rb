@@ -11,6 +11,7 @@ require "lara"
 # - TextBlocks translation (mixed translatable/non-translatable content)
 # - Auto-detect source language
 # - Advanced translation options
+# - Profanity detection and handling
 # - Translation with styleguides
 # - Get available languages
 # - Language detection
@@ -97,22 +98,51 @@ def main
     puts "Original: This is a comprehensive translation example"
     puts "Italian (with all options): #{result6.translation}\n"
 
-    # Example 7: Translation with profanity filter
-    puts "=== Translation with Profanity Filter ==="
+    # Example 7: Translation with profanity detection and handling
+    puts "=== Translation with Profanity Detection and Handling ==="
     profanity_text = "Don't be such a tool."
-    result7 = lara.translate(profanity_text, target: "it-IT", source: "en-US", profanity_filter: "detect")
+
+    # Detect profanities in both source and target, report without modifying the translation
+    detect_result = lara.translate(
+      profanity_text,
+      target: "it-IT",
+      source: "en-US",
+      profanities_detect: "source_target",
+      profanities_handling: "detect"
+    )
     puts "Original: #{profanity_text}"
-    puts "Detect mode: #{result7.translation}"
-    if result7.profanities
-      puts "Masked text: #{result7.profanities.masked_text}"
-      puts "Profanities found: #{result7.profanities.profanities.length}"
+    puts "Detect mode translation: #{detect_result.translation}"
+    if detect_result.profanities.is_a?(Lara::Models::ProfanitiesResult)
+      prof = detect_result.profanities
+      if prof.target.is_a?(Lara::Models::ProfanityDetectResult)
+        puts "Target masked text: #{prof.target.masked_text}"
+        puts "Target profanities found: #{prof.target.profanities.length}"
+      end
+      if prof.source.is_a?(Lara::Models::ProfanityDetectResult)
+        puts "Source masked text: #{prof.source.masked_text}"
+      end
     end
 
-    result7b = lara.translate(profanity_text, target: "it-IT", source: "en-US", profanity_filter: "hide")
-    puts "Hide mode: #{result7b.translation}"
+    # Detect profanities in target only and hide them (replace them with asterisks)
+    hide_result = lara.translate(
+      profanity_text,
+      target: "it-IT",
+      source: "en-US",
+      profanities_detect: "target",
+      profanities_handling: "hide"
+    )
+    puts "Hide mode translation: #{hide_result.translation}"
 
-    result7c = lara.translate(profanity_text, target: "it-IT", source: "en-US", profanity_filter: "avoid")
-    puts "Avoid mode: #{result7c.translation}\n"
+    # Detect profanities in target only, instruct Lara to avoid generating them
+    avoid_result = lara.translate(
+      profanity_text,
+      target: "it-IT",
+      source: "en-US",
+      profanities_detect: "target",
+      profanities_handling: "avoid"
+    )
+    puts "Avoid mode translation: #{avoid_result.translation}"
+
 
     # Example 8: List available styleguides
     puts "=== List Available Styleguides ==="

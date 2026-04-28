@@ -56,14 +56,15 @@ module Lara
     # @param reasoning [Boolean] When true with a block, yields partial results during reasoning
     # @param headers [Hash,nil]
     # @param metadata [String, Hash, nil]
-    # @param profanity_filter [String,nil] One of "detect", "avoid", "hide"
+    # @param profanities_detect [String,nil] One of "target", "source_target"
+    # @param profanities_handling [String,nil] One of "detect", "avoid", "hide" (default: "hide" when profanities_detect is set)
     # @yield [Lara::Models::TextResult] Partial translation result (only when reasoning is true)
     # @return [Lara::Models::TextResult] Final translation result
     def translate(text, target:, source: nil, source_hint: nil, adapt_to: nil, glossaries: nil,
                   instructions: nil, content_type: nil, multiline: true, timeout_ms: nil,
                   priority: nil, use_cache: nil, cache_ttl_s: nil, no_trace: false, verbose: false,
                   style: nil, reasoning: false, headers: nil, metadata: nil,
-                  profanity_filter: nil,
+                  profanities_detect: nil, profanities_handling: nil,
                   styleguide_id: nil, styleguide_reasoning: nil,
                   styleguide_explanation_language: nil, &callback)
       q = normalize_text_input(text)
@@ -92,7 +93,8 @@ module Lara
         style: style,
         reasoning: reasoning,
         metadata: metadata,
-        profanity_filter: profanity_filter,
+        profanities_detect: profanities_detect,
+        profanities_handling: profanities_handling,
         styleguide_id: styleguide_id,
         styleguide_reasoning: styleguide_reasoning,
         styleguide_explanation_language: styleguide_explanation_language
@@ -145,7 +147,8 @@ module Lara
       result = @client.post("/v2/detect/profanities", body: body)
       Lara::Models::ProfanityDetectResult.new(
         masked_text: result["masked_text"],
-        profanities: result["profanities"] || []
+        profanities: result["profanities"] || [],
+        error: result["error"]
       )
     end
 

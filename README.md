@@ -16,6 +16,7 @@ All major translation features are accessible, making it easy to integrate and c
 - **Glossaries**: Enforce terminology standards across translations
 - **Styleguides**: Apply custom translation style rules with detailed change reasoning
 - **Language Detection**: Automatic source language identification
+- **Profanity Detection & Handling**: Detect profanities in source and/or target text, and hide or avoid them in translation
 - **Advanced Options**: Translation instructions and more
 
 ## 📚 Documentation
@@ -82,6 +83,7 @@ export LARA_ACCESS_KEY_SECRET="your-access-key-secret"
   - TextBlocks translation (mixed translatable/non-translatable content)
   - Auto-detect source language
   - Advanced translation options
+  - Profanity detection and handling
   - Translation with styleguides
   - Get available languages
 
@@ -536,10 +538,34 @@ result = lara.translate(
   timeout_ms: 10000,                        # Request timeout in milliseconds
   no_trace: false,                          # Disable request tracing
   verbose: false,                           # Enable verbose response
+  profanities_detect: "target",             # Detect profanities in: "target" or "source_target"
+  profanities_handling: "detect",           # How to handle profanities: "detect", "hide", or "avoid"
   styleguide_id: "stg_id",                 # Styleguide ID to apply
   styleguide_reasoning: true,              # Enable styleguide change reasoning
   styleguide_explanation_language: "en-US", # Language for change explanations
 )
+```
+
+### 🚫 Profanity Detection and Handling
+
+Use `profanities_detect` and `profanities_handling` together to control how profanities are detected and handled.
+
+- `"target"` — detect profanities in the translated text only
+- `"source_target"` — detect in both source and target text
+- `"detect"` — report profanities without modifying the translation
+- `"hide"` — replace detected profanities with asterisks (default when detect is set)
+- `"avoid"` — instruct the model not to generate profanities
+
+```ruby
+result = lara.translate(
+  "Don't be such a tool.",
+  target: "it-IT",
+  source: "en-US",
+  profanities_detect: "source_target",
+  profanities_handling: "detect"
+)
+# result.profanities.target — detection result for the translated text
+# result.profanities.source — detection result for the source text (only with source_target)
 ```
 
 ### Language Codes

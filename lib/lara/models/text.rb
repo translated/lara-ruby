@@ -52,9 +52,9 @@ module Lara
     end
 
     class ProfanityDetectResult < Base
-      attr_reader :masked_text, :profanities
+      attr_reader :masked_text, :profanities, :error
 
-      def initialize(masked_text:, profanities: [])
+      def initialize(masked_text:, profanities: [], error: nil)
         super()
         @masked_text = masked_text
         @profanities = profanities.map do |p|
@@ -65,6 +65,22 @@ module Lara
             score: p["score"] || p[:score]
           )
         end
+        @error = error
+      end
+    end
+
+    # Wraps profanity detection results for both target and (optionally) source text.
+    # Returned in TextResult#profanities when profanities_detect is set.
+    class ProfanitiesResult < Base
+      # @return [ProfanityDetectResult, Array<ProfanityDetectResult, nil>, nil]
+      attr_reader :target
+      # @return [ProfanityDetectResult, Array<ProfanityDetectResult, nil>, nil]
+      attr_reader :source
+
+      def initialize(target: nil, source: nil)
+        super()
+        @target = target
+        @source = source
       end
     end
 
@@ -215,11 +231,23 @@ module Lara
 
         def convert_profanities(value)
           return nil if value.nil?
+          return nil unless value.is_a?(Hash)
+          return nil unless value.key?("target") || value.key?("source")
+
+          ProfanitiesResult.new(
+            target: parse_profanity_value(value["target"]),
+            source: parse_profanity_value(value["source"])
+          )
+        end
+
+        def parse_profanity_value(value)
+          return nil if value.nil?
 
           if value.is_a?(Hash)
             ProfanityDetectResult.new(
               masked_text: value["masked_text"],
-              profanities: value["profanities"] || []
+              profanities: value["profanities"] || [],
+              error: value["error"]
             )
           elsif value.is_a?(Array)
             value.map do |v|
@@ -227,7 +255,8 @@ module Lara
 
               ProfanityDetectResult.new(
                 masked_text: v["masked_text"],
-                profanities: v["profanities"] || []
+                profanities: v["profanities"] || [],
+                error: v["error"]
               )
             end
           end
