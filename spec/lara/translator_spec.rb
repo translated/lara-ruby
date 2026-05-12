@@ -10,7 +10,7 @@ RSpec.describe Lara::Translator do
   end
 
   def stub_translate(body)
-    stub_request(:post, "#{base_url}/translate").to_return(
+    stub_request(:post, "#{base_url}/v2/translate").to_return(
       status: 200,
       body: { "content" => body }.to_json,
       headers: { "Content-Type" => "application/json" }
@@ -84,14 +84,14 @@ RSpec.describe Lara::Translator do
                      "content_type" => "text/plain")
       translator.translate("x", target: "it", no_trace: true)
       expect(WebMock).to have_requested(:post,
-                                        "#{base_url}/translate").with(headers: { "X-No-Trace" => "true" })
+                                        "#{base_url}/v2/translate").with(headers: { "X-No-Trace" => "true" })
     end
 
     it "maps use_cache true to yes and false to no" do
       stub_translate("translation" => "x", "source_language" => "en",
                      "content_type" => "text/plain")
       translator.translate("x", target: "it", use_cache: true)
-      expect(WebMock).to(have_requested(:post, "#{base_url}/translate").with do |req|
+      expect(WebMock).to(have_requested(:post, "#{base_url}/v2/translate").with do |req|
         body = JSON.parse(req.body)
         body["use_cache"] == "yes"
       end)

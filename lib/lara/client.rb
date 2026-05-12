@@ -228,12 +228,7 @@ module Lara
     def parse_json(body)
       return {} if body.nil? || body.empty?
 
-      parsed = JSON.parse(body)
-      if parsed.is_a?(Hash) && parsed.key?("content")
-        inner = parsed["content"]
-        return inner if inner.is_a?(Hash) || inner.is_a?(Array)
-      end
-      parsed
+      JSON.parse(body)
     end
 
     def parse_stream_response(body, &block)
@@ -252,8 +247,7 @@ module Lara
         next if trimmed_line.empty?
 
         begin
-          parsed = JSON.parse(trimmed_line)
-          result = parsed["content"] || parsed
+          result = JSON.parse(trimmed_line)
           block.call(result) if block
           last_result = result
         rescue JSON::ParserError
@@ -263,8 +257,7 @@ module Lara
 
       if !buffer.empty? && buffer.strip != ""
         begin
-          parsed = JSON.parse(buffer.strip)
-          result = parsed["content"] || parsed
+          result = JSON.parse(buffer.strip)
           block.call(result) if block
           last_result = result
         rescue JSON::ParserError

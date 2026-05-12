@@ -108,7 +108,7 @@ module Lara
                           ->(partial) { callback.call(Lara::Models::TextResult.from_hash(partial)) }
                         end
 
-      result = @client.post("/translate", body: body, headers: request_headers, &stream_callback)
+      result = @client.post("/v2/translate", body: body, headers: request_headers, &stream_callback)
       Lara::Models::TextResult.from_hash(result) if result
     end
 
