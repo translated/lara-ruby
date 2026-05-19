@@ -115,9 +115,10 @@ module Lara
     end
 
     class Styleguide < Base
-      attr_reader :id, :name, :content, :owner_id, :created_at, :updated_at
+      attr_reader :id, :name, :content, :owner_id, :created_at, :updated_at, :is_personal
 
-      def initialize(id:, name:, content: nil, owner_id: nil, created_at: nil, updated_at: nil, **_kwargs)
+      def initialize(id:, name:, content: nil, owner_id: nil, created_at: nil, updated_at: nil,
+                     is_personal: nil, **_kwargs)
         super()
         @id = id
         @name = name
@@ -125,6 +126,7 @@ module Lara
         @owner_id = owner_id
         @created_at = Base.parse_time(created_at)
         @updated_at = Base.parse_time(updated_at)
+        @is_personal = is_personal
       end
 
       def to_s

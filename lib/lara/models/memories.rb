@@ -21,7 +21,7 @@ module Lara
         @secret = secret
         @collaborators_count = collaborators_count
         @shared_at = Base.parse_time(shared_at)
-        @is_personal = is_personal.nil? ? _kwargs[:isPersonal] : is_personal
+        @is_personal = is_personal
       end
     end
 

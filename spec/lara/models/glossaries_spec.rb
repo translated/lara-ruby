@@ -18,6 +18,25 @@ RSpec.describe Lara::Models::Glossary do
       expect(g.created_at).to be_a(Time)
       expect(g.updated_at).to be_a(Time)
     end
+
+    it "maps is_personal from API responses" do
+      g = described_class.new(
+        id: "gls_1Bc2De3Fg4Hi5Jk6Lm7No",
+        name: "My Glossary",
+        owner_id: "acc_1XyZ2Ab3Cd4Ef5Gh6Ij7Kl",
+        is_personal: true
+      )
+      expect(g.is_personal).to be(true)
+    end
+
+    it "leaves is_personal nil when omitted" do
+      g = described_class.new(
+        id: "gls_1Bc2De3Fg4Hi5Jk6Lm7No",
+        name: "Team Glossary",
+        owner_id: "acc_1XyZ2Ab3Cd4Ef5Gh6Ij7Kl"
+      )
+      expect(g.is_personal).to be_nil
+    end
   end
 end
 

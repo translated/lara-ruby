@@ -58,6 +58,7 @@ RSpec.describe Lara::Memories do
       expect(list.first).to be_a(Lara::Models::Memory)
       expect(list.first.id).to eq("mem_0Ab1Cd2Ef3Gh4Ij5Kl6Mn")
       expect(list.first.name).to eq("Test Memory")
+      expect(list.first.is_personal).to be(true)
     end
   end
 

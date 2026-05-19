@@ -57,6 +57,7 @@ RSpec.describe Lara::Glossaries do
       expect(list.size).to eq(1)
       expect(list.first).to be_a(Lara::Models::Glossary)
       expect(list.first.id).to eq("gls_1Bc2De3Fg4Hi5Jk6Lm7No")
+      expect(list.first.is_personal).to be(true)
     end
   end
 

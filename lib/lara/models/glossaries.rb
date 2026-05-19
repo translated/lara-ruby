@@ -16,7 +16,7 @@ module Lara
         @created_at = Base.parse_time(created_at)
         @updated_at = Base.parse_time(updated_at)
         @shared_at = Base.parse_time(shared_at)
-        @is_personal = is_personal.nil? ? _kwargs[:isPersonal] : is_personal
+        @is_personal = is_personal
       end
     end
 

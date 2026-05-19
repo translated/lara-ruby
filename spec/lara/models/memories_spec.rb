@@ -23,6 +23,25 @@ RSpec.describe Lara::Models::Memory do
       expect(m.updated_at).to be_a(Time)
       expect(m.external_id).to eq("ext_3De4Fg5Hi6Jk7Lm8No9Pq")
     end
+
+    it "maps is_personal from API responses" do
+      m = described_class.new(
+        id: "mem_0Ab1Cd2Ef3Gh4Ij5Kl6Mn",
+        name: "My Memory",
+        owner_id: "acc_1XyZ2Ab3Cd4Ef5Gh6Ij7Kl",
+        is_personal: true
+      )
+      expect(m.is_personal).to be(true)
+    end
+
+    it "leaves is_personal nil when omitted" do
+      m = described_class.new(
+        id: "mem_0Ab1Cd2Ef3Gh4Ij5Kl6Mn",
+        name: "Team Memory",
+        owner_id: "acc_1XyZ2Ab3Cd4Ef5Gh6Ij7Kl"
+      )
+      expect(m.is_personal).to be_nil
+    end
   end
 end
 
