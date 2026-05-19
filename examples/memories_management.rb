@@ -11,6 +11,8 @@ require "lara"
 # - TMX file import with progress monitoring
 # - Translation deletion
 # - Translation with TUID and context
+# - TMX import with callback URL (async notification)
+# - Async memory export with callback URL
 
 def main
   # All examples use environment variables for credentials, so set them first:
@@ -139,6 +141,43 @@ def main
     rescue StandardError => e
       puts "Error deleting translation: #{e.message}\n"
     end
+
+    # Example 6: Async TMX import with callback URL
+    puts "=== Async TMX Import with Callback URL ==="
+    if File.exist?(tmx_file_path)
+      begin
+        import_callback_url = "https://your-server.example.com/callbacks/memory-import"
+        callback_import = lara.memories.import_tmx(memory_id, tmx_file_path,
+                                                   callback_url: import_callback_url)
+        puts "✅ Async import started (ID: #{callback_import.id})"
+        puts "   Callback will be sent to: #{import_callback_url}"
+        puts
+      rescue StandardError => e
+        puts "Error with async TMX import: #{e.message}\n"
+      end
+    else
+      puts "TMX file not found, skipping async import example.\n"
+    end
+
+    # Example 7: Async memory export
+    puts "=== Async Memory Export ==="
+    begin
+      export_callback_url = "https://your-server.example.com/callbacks/memory-export"
+
+      # Export with default format
+      export_job = lara.memories.export_async(memory_id, callback_url: export_callback_url)
+      puts "✅ Export triggered (Job ID: #{export_job.job_id})"
+      puts "   Callback will be sent to: #{export_callback_url}"
+
+      # Export with specific format
+      export_tmx_job = lara.memories.export_async(memory_id, format: "tmx",
+                                                  callback_url: export_callback_url)
+      puts "✅ TMX export triggered (Job ID: #{export_tmx_job.job_id})"
+      puts
+    rescue StandardError => e
+      puts "Error with async export: #{e.message}\n"
+    end
+
   rescue StandardError => e
     puts "Error creating memory: #{e.message}\n"
   ensure

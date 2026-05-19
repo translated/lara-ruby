@@ -2,6 +2,23 @@
 
 module Lara
   class Memories
+    # Supported memory export formats
+    module ExportFormat
+      TMX = "tmx"
+      JTM = "jtm"
+
+      # @return [Array<String>] All supported formats
+      def self.all
+        [TMX, JTM]
+      end
+
+      # @param format [String] The format to validate
+      # @return [Boolean] True if the format is supported
+      def self.valid?(format)
+        all.include?(format)
+      end
+    end
+
     def initialize(client)
       @client = client
       @polling_interval = 2
@@ -99,7 +116,7 @@ module Lara
     end
 
     # @return [Lara::Models::MemoryImport]
-    def import_tmx(id, tmx_path)
+    def import_tmx(id, tmx_path, callback_url: nil)
       require "stringio"
       require "zlib"
       basename = File.basename(tmx_path)
@@ -111,8 +128,22 @@ module Lara
       buffer.rewind
 
       files = { "tmx" => Faraday::UploadIO.new(buffer, "application/gzip", "#{basename}.gz") }
+      body = { "compression" => "gzip" }
+      body["callback_url"] = callback_url if callback_url
       Lara::Models::MemoryImport.new(**@client.post("/v2/memories/#{id}/import",
-                                                    body: { "compression" => "gzip" }, files: files).transform_keys(&:to_sym))
+                                                    body: body, files: files).transform_keys(&:to_sym))
+    end
+
+    # @param format [String,nil] One of Lara::Memories::ExportFormat constants
+    # @return [Lara::Models::MemoryExport]
+    def export_async(id, format: nil, callback_url:)
+      if format && !ExportFormat.valid?(format)
+        raise ArgumentError, "Invalid format '#{format}'. Must be one of: #{ExportFormat.all.join(', ')}"
+      end
+
+      params = { callback_url: callback_url }
+      params[:format] = format if format
+      Lara::Models::MemoryExport.new(**@client.get("/v2/memories/#{id}/export/async", params: params).transform_keys(&:to_sym))
     end
 
     # @return [Lara::Models::MemoryImport]

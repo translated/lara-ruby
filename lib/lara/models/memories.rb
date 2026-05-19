@@ -38,5 +38,14 @@ module Lara
         @progress = progress
       end
     end
+
+    class MemoryExport < Base
+      attr_reader :job_id
+
+      def initialize(job_id:, **_kwargs)
+        super()
+        @job_id = job_id
+      end
+    end
   end
 end

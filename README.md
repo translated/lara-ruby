@@ -133,6 +133,8 @@ ruby audio_translation.rb
   - TMX file import with progress monitoring
   - Translation deletion
   - Translation with TUID and context
+  - TMX import with callback URL (async notification)
+  - Async memory export with callback URL
 
 ```bash
 cd examples
@@ -413,6 +415,30 @@ delete_job = lara.memories.delete_translation(
 
 # Wait for import completion
 completed_import = lara.memories.wait_for_import(memory_import, max_wait_time: 300)  # 5 minutes
+```
+
+### 🔄 Async Memory Import & Export
+
+```ruby
+# TMX import with callback URL (async notification on completion)
+memory_import = lara.memories.import_tmx(
+  "mem_1A2b3C4d5E6f7G8h9I0jKl",
+  "/path/to/your/memory.tmx",
+  callback_url: "https://your-server.example.com/callbacks/memory-import"
+)
+
+# Async memory export (callback receives the exported file)
+export_job = lara.memories.export_async(
+  "mem_1A2b3C4d5E6f7G8h9I0jKl",
+  callback_url: "https://your-server.example.com/callbacks/memory-export"
+)
+
+# Export with specific format
+export_job = lara.memories.export_async(
+  "mem_1A2b3C4d5E6f7G8h9I0jKl",
+  format: "tmx",
+  callback_url: "https://your-server.example.com/callbacks/memory-export"
+)
 ```
 
 ### 📚 Glossary Management

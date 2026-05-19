@@ -192,6 +192,41 @@ RSpec.describe Lara::Memories do
         expect(imp.id).to eq("imp-1")
       end
     end
+
+    it "sends callback_url when provided" do
+      memory_id = "mem_0Ab1Cd2Ef3Gh4Ij5Kl6Mn"
+      callback_url = "https://example.com/callback"
+      import_content = { "id" => "imp-1", "channel" => "main", "size" => 100, "progress" => 0 }
+      stub_request(:post, "#{base_url}/v2/memories/#{memory_id}/import").to_return(
+        status: 200,
+        body: { "content" => import_content }.to_json,
+        headers: { "Content-Type" => "application/json" }
+      )
+      Tempfile.create(["test", ".tmx"]) do |f|
+        f.write("<tmx></tmx>")
+        f.rewind
+        imp = memories.import_tmx(memory_id, f.path, callback_url: callback_url)
+        expect(imp).to be_a(Lara::Models::MemoryImport)
+        expect(WebMock).to(have_requested(:post, "#{base_url}/v2/memories/#{memory_id}/import").with { |req|
+          req.body.include?("callback_url") && req.body.include?(callback_url)
+        })
+      end
+    end
+  end
+
+  describe "#export_async" do
+    it "calls get with format and returns MemoryExport" do
+      memory_id = "mem_0Ab1Cd2Ef3Gh4Ij5Kl6Mn"
+      export_content = { "job_id" => "export-1" }
+      stub_request(:get, "#{base_url}/v2/memories/#{memory_id}/export/async").to_return(
+        status: 200,
+        body: { "content" => export_content }.to_json,
+        headers: { "Content-Type" => "application/json" }
+      )
+      export_job = memories.export_async(memory_id, format: "tmx")
+      expect(export_job).to be_a(Lara::Models::MemoryExport)
+      expect(export_job.job_id).to eq("export-1")
+    end
   end
 
   describe "#get_import_status" do
