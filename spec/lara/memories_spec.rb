@@ -200,7 +200,7 @@ RSpec.describe Lara::Memories do
       import_content = { "id" => "imp-1", "channel" => "main", "size" => 100, "progress" => 0 }
       stub_request(:post, "#{base_url}/v2/memories/#{memory_id}/import").to_return(
         status: 200,
-        body: { "content" => import_content }.to_json,
+        body: import_content.to_json,
         headers: { "Content-Type" => "application/json" }
       )
       Tempfile.create(["test", ".tmx"]) do |f|
@@ -221,10 +221,10 @@ RSpec.describe Lara::Memories do
       export_content = { "job_id" => "export-1" }
       stub_request(:get, "#{base_url}/v2/memories/#{memory_id}/export/async").to_return(
         status: 200,
-        body: { "content" => export_content }.to_json,
+        body: export_content.to_json,
         headers: { "Content-Type" => "application/json" }
       )
-      export_job = memories.export_async(memory_id, format: "tmx")
+      export_job = memories.export_async(memory_id, format: "tmx", callback_url: "https://example.com/cb")
       expect(export_job).to be_a(Lara::Models::MemoryExport)
       expect(export_job.job_id).to eq("export-1")
     end
