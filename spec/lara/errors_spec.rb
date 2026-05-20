@@ -20,7 +20,7 @@ RSpec.describe Lara::LaraApiError do
     it "builds error from JSON response with error object" do
       response = faraday_response(
         status: 400,
-        body: { "error" => { "type" => "ValidationError", "message" => "Invalid parameter" } }
+        body: { "type" => "ValidationError", "message" => "Invalid parameter" }
       )
       err = described_class.from_response(response)
       expect(err).to be_a(Lara::LaraApiError)

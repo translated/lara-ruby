@@ -16,7 +16,7 @@ RSpec.describe Lara::Memories do
   def stub_get(path, content)
     stub_request(:get, "#{base_url}#{path}").to_return(
       status: 200,
-      body: { "content" => content }.to_json,
+      body: content.to_json,
       headers: { "Content-Type" => "application/json" }
     )
   end
@@ -24,7 +24,7 @@ RSpec.describe Lara::Memories do
   def stub_post(path, content)
     stub_request(:post, "#{base_url}#{path}").to_return(
       status: 200,
-      body: { "content" => content }.to_json,
+      body: content.to_json,
       headers: { "Content-Type" => "application/json" }
     )
   end
@@ -32,7 +32,7 @@ RSpec.describe Lara::Memories do
   def stub_put(path, content)
     stub_request(:put, "#{base_url}#{path}").to_return(
       status: 200,
-      body: { "content" => content }.to_json,
+      body: content.to_json,
       headers: { "Content-Type" => "application/json" }
     )
   end
@@ -40,7 +40,7 @@ RSpec.describe Lara::Memories do
   def stub_delete(path, content)
     stub_request(:delete, "#{base_url}#{path}").to_return(
       status: 200,
-      body: { "content" => content }.to_json,
+      body: content.to_json,
       headers: { "Content-Type" => "application/json" }
     )
   end
@@ -84,7 +84,7 @@ RSpec.describe Lara::Memories do
       memory_id = "mem_0Ab1Cd2Ef3Gh4Ij5Kl6Mn"
       stub_request(:get, "#{base_url}/v2/memories/#{memory_id}").to_return(
         status: 404,
-        body: { "error" => { "type" => "NotFound", "message" => "Not found" } }.to_json,
+        body: { "type" => "NotFound", "message" => "Not found" }.to_json,
         headers: { "Content-Type" => "application/json" }
       )
       expect(memories.get(memory_id)).to be_nil
@@ -155,7 +155,7 @@ RSpec.describe Lara::Memories do
       import_content = { "id" => "imp-1", "channel" => "main", "size" => 0, "progress" => 1.0 }
       stub_request(:delete, "#{base_url}/v2/memories/#{memory_id}/content").to_return(
         status: 200,
-        body: { "content" => import_content }.to_json,
+        body: import_content.to_json,
         headers: { "Content-Type" => "application/json" }
       )
       imp = memories.delete_translation(memory_id, source: "en", target: "it", sentence: "Hi",
@@ -182,7 +182,7 @@ RSpec.describe Lara::Memories do
       import_content = { "id" => "imp-1", "channel" => "main", "size" => 100, "progress" => 0 }
       stub_request(:post, "#{base_url}/v2/memories/#{memory_id}/import").to_return(
         status: 200,
-        body: { "content" => import_content }.to_json,
+        body: import_content.to_json,
         headers: { "Content-Type" => "application/json" }
       )
       Tempfile.create(["test", ".tmx"]) do |f|
@@ -246,9 +246,9 @@ RSpec.describe Lara::Memories do
       import_done = { "id" => "imp-1", "channel" => "main", "size" => 100, "progress" => 1.0 }
       stub_request(:get, "#{base_url}/v2/memories/imports/imp-1")
         .to_return(
-          { status: 200, body: { "content" => import_in_progress }.to_json,
+          { status: 200, body: import_in_progress.to_json,
             headers: { "Content-Type" => "application/json" } },
-          { status: 200, body: { "content" => import_done }.to_json,
+          { status: 200, body: import_done.to_json,
             headers: { "Content-Type" => "application/json" } }
         )
       memories.instance_variable_set(:@polling_interval, 0)
@@ -263,9 +263,9 @@ RSpec.describe Lara::Memories do
       import_done = { "id" => "imp-1", "channel" => "main", "size" => 100, "progress" => 1.0 }
       stub_request(:get, "#{base_url}/v2/memories/imports/imp-1")
         .to_return(
-          { status: 200, body: { "content" => import_in_progress }.to_json,
+          { status: 200, body: import_in_progress.to_json,
             headers: { "Content-Type" => "application/json" } },
-          { status: 200, body: { "content" => import_done }.to_json,
+          { status: 200, body: import_done.to_json,
             headers: { "Content-Type" => "application/json" } }
         )
       memories.instance_variable_set(:@polling_interval, 0)

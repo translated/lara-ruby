@@ -16,7 +16,7 @@ RSpec.describe Lara::Client do
           end
     stub_request(method.downcase.to_sym, url).to_return(
       status: status,
-      body: response_body.is_a?(Hash) ? response_body.to_json : response_body,
+      body: (response_body.is_a?(Hash) || response_body.is_a?(Array)) ? response_body.to_json : response_body,
       headers: { "Content-Type" => content_type }
     )
   end
@@ -33,41 +33,41 @@ RSpec.describe Lara::Client do
   end
 
   describe "#get" do
-    it "returns content from JSON response" do
-      stub_api("GET", "/languages", response_body: { "content" => %w[en-US it-IT fr-FR] })
+    it "returns parsed JSON response" do
+      stub_api("GET", "/languages", response_body: %w[en-US it-IT fr-FR])
       result = client.get("/languages")
       expect(result).to eq(%w[en-US it-IT fr-FR])
     end
 
     it "normalizes path with leading slash" do
-      stub_api("GET", "/languages", response_body: { "content" => [] })
+      stub_api("GET", "/languages", response_body: [])
       client.get("languages")
       expect(WebMock).to have_requested(:get, "#{base_url}/languages")
     end
   end
 
   describe "#post" do
-    it "returns content from JSON response" do
-      stub_api("POST", "/translate", response_body: { "content" => { "translation" => "ok" } })
+    it "returns parsed JSON response" do
+      stub_api("POST", "/translate", response_body: { "translation" => "ok" })
       result = client.post("/translate", body: { q: "hello", target: "it" })
       expect(result).to eq("translation" => "ok")
     end
   end
 
   describe "#put" do
-    it "returns content from JSON response" do
+    it "returns parsed JSON response" do
       memory_id = "mem_0Ab1Cd2Ef3Gh4Ij5Kl6Mn"
       stub_api("PUT", "/memories/#{memory_id}",
-               response_body: { "content" => { "id" => memory_id, "name" => "New" } })
+               response_body: { "id" => memory_id, "name" => "New" })
       result = client.put("/memories/#{memory_id}", body: { name: "New" })
       expect(result).to include("id" => memory_id, "name" => "New")
     end
   end
 
   describe "#delete" do
-    it "returns content from JSON response" do
+    it "returns parsed JSON response" do
       memory_id = "mem_0Ab1Cd2Ef3Gh4Ij5Kl6Mn"
-      stub_api("DELETE", "/memories/#{memory_id}", response_body: { "content" => { "id" => memory_id } })
+      stub_api("DELETE", "/memories/#{memory_id}", response_body: { "id" => memory_id })
       result = client.delete("/memories/#{memory_id}")
       expect(result).to include("id" => memory_id)
     end
@@ -76,7 +76,7 @@ RSpec.describe Lara::Client do
   describe "error handling" do
     it "raises LaraApiError on API error response" do
       stub_api("POST", "/translate",
-               response_body: { "error" => { "type" => "ValidationError", "message" => "Bad request" } }, status: 400)
+               response_body: { "type" => "ValidationError", "message" => "Bad request" }, status: 400)
       expect { client.post("/translate", body: {}) }.to raise_error(Lara::LaraApiError) do |e|
         expect(e.status_code).to eq(400)
         expect(e.type).to eq("ValidationError")
@@ -97,13 +97,13 @@ RSpec.describe Lara::Client do
 
   describe "request headers" do
     it "uses correct HTTP method for get requests" do
-      stub_api("GET", "/languages", response_body: { "content" => [] })
+      stub_api("GET", "/languages", response_body: [])
       client.get("/languages")
       expect(WebMock).to have_requested(:get, "#{base_url}/languages")
     end
 
     it "sends Authorization with Bearer prefix" do
-      stub_api("POST", "/translate", response_body: { "content" => {} })
+      stub_api("POST", "/translate", response_body: {})
       client.post("/translate", body: { q: "x", target: "it" })
       expect(WebMock).to(have_requested(:post, "#{base_url}/translate")
         .with { |req| req.headers["Authorization"]&.start_with?("Bearer ") })
@@ -129,7 +129,7 @@ RSpec.describe Lara::Client do
     it "retries on 401 jwt expired by refreshing token" do
       stub_request(:post, "#{base_url}/test").to_return(
         { status: 401,
-          body: { "error" => { "type" => "AuthError", "message" => "jwt expired" } }.to_json,
+          body: { "type" => "AuthError", "message" => "jwt expired" }.to_json,
           headers: { "Content-Type" => "application/json" } },
         { status: 200,
           body: { "result" => "success" }.to_json,
@@ -147,7 +147,7 @@ RSpec.describe Lara::Client do
     it "raises non-jwt-expired 401 without retrying" do
       stub_request(:post, "#{base_url}/test").to_return(
         status: 401,
-        body: { "error" => { "type" => "AuthError", "message" => "invalid token" } }.to_json,
+        body: { "type" => "AuthError", "message" => "invalid token" }.to_json,
         headers: { "Content-Type" => "application/json" }
       )
       expect { client.post("/test", body: { q: "x" }) }.to raise_error(Lara::LaraApiError) do |e|
@@ -169,7 +169,7 @@ RSpec.describe Lara::Client do
 
   describe "streaming" do
     it "parses NDJSON streaming response when callback given" do
-      stream_body = "{\"content\":{\"translation\":\"partial\"}}\n{\"content\":{\"translation\":\"Ciao\"}}\n"
+      stream_body = "{\"translation\":\"partial\"}\n{\"translation\":\"Ciao\"}\n"
       stub_api("POST", "/translate", response_body: stream_body)
       results = []
       client.post("/translate", body: { q: "Hello", target: "it", reasoning: true }) do |partial|
@@ -180,7 +180,7 @@ RSpec.describe Lara::Client do
     end
 
     it "returns last result from streaming response" do
-      stream_body = "{\"content\":{\"translation\":\"Ciao\"}}\n"
+      stream_body = "{\"translation\":\"Ciao\"}\n"
       stub_api("POST", "/translate", response_body: stream_body)
       result = client.post("/translate", body: { q: "Hello", target: "it", reasoning: true })
       expect(result).to eq("translation" => "Ciao")

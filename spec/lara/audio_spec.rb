@@ -28,12 +28,12 @@ RSpec.describe Lara::AudioTranslator do
         .with(query: hash_including({}))
         .to_return(
           status: 200,
-          body: { "content" => upload_url_response }.to_json,
+          body: upload_url_response.to_json,
           headers: { "Content-Type" => "application/json" }
         )
       stub_request(:post, "#{base_url}/v2/audio/translate").to_return(
         status: 200,
-        body: { "content" => audio_content }.to_json,
+        body: audio_content.to_json,
         headers: { "Content-Type" => "application/json" }
       )
       Tempfile.create(["audio", ".mp3"]) do |f|
@@ -54,12 +54,12 @@ RSpec.describe Lara::AudioTranslator do
         .with(query: hash_including({}))
         .to_return(
           status: 200,
-          body: { "content" => upload_url_response }.to_json,
+          body: upload_url_response.to_json,
           headers: { "Content-Type" => "application/json" }
         )
       stub_request(:post, "#{base_url}/v2/audio/translate").to_return(
         status: 200,
-        body: { "content" => audio_content }.to_json,
+        body: audio_content.to_json,
         headers: { "Content-Type" => "application/json" }
       )
       Tempfile.create(["audio", ".mp3"]) do |f|
@@ -75,7 +75,7 @@ RSpec.describe Lara::AudioTranslator do
     it "returns Audio" do
       stub_request(:get, "#{base_url}/v2/audio/#{audio_id}").to_return(
         status: 200,
-        body: { "content" => audio_content }.to_json,
+        body: audio_content.to_json,
         headers: { "Content-Type" => "application/json" }
       )
       result = audio.status(audio_id)
@@ -89,7 +89,7 @@ RSpec.describe Lara::AudioTranslator do
       download_url = "https://s3-fake.example.com/download/#{audio_id}"
       stub_request(:get, "#{base_url}/v2/audio/#{audio_id}/download-url").to_return(
         status: 200,
-        body: { "content" => { "url" => download_url } }.to_json,
+        body: { "url" => download_url }.to_json,
         headers: { "Content-Type" => "application/json" }
       )
       result = audio.download(audio_id)
@@ -106,22 +106,22 @@ RSpec.describe Lara::AudioTranslator do
         .with(query: hash_including({}))
         .to_return(
           status: 200,
-          body: { "content" => upload_url_response }.to_json,
+          body: upload_url_response.to_json,
           headers: { "Content-Type" => "application/json" }
         )
       stub_request(:post, "#{base_url}/v2/audio/translate").to_return(
         status: 200,
-        body: { "content" => audio_content.merge("status" => "translated") }.to_json,
+        body: audio_content.merge("status" => "translated").to_json,
         headers: { "Content-Type" => "application/json" }
       )
       stub_request(:get, "#{base_url}/v2/audio/#{audio_id}").to_return(
         status: 200,
-        body: { "content" => audio_content.merge("status" => "translated") }.to_json,
+        body: audio_content.merge("status" => "translated").to_json,
         headers: { "Content-Type" => "application/json" }
       )
       stub_request(:get, "#{base_url}/v2/audio/#{audio_id}/download-url").to_return(
         status: 200,
-        body: { "content" => { "url" => download_url } }.to_json,
+        body: { "url" => download_url }.to_json,
         headers: { "Content-Type" => "application/json" }
       )
       audio.instance_variable_set(:@polling_interval, 0)
@@ -138,18 +138,18 @@ RSpec.describe Lara::AudioTranslator do
         .with(query: hash_including({}))
         .to_return(
           status: 200,
-          body: { "content" => upload_url_response }.to_json,
+          body: upload_url_response.to_json,
           headers: { "Content-Type" => "application/json" }
         )
       stub_request(:post, "#{base_url}/v2/audio/translate").to_return(
         status: 200,
-        body: { "content" => audio_content.merge("status" => "initialized") }.to_json,
+        body: audio_content.merge("status" => "initialized").to_json,
         headers: { "Content-Type" => "application/json" }
       )
       stub_request(:get, "#{base_url}/v2/audio/#{audio_id}").to_return(
         status: 200,
-        body: { "content" => audio_content.merge("status" => "error",
-                                                 "error_reason" => "Audio processing failed") }.to_json,
+        body: audio_content.merge("status" => "error",
+                                  "error_reason" => "Audio processing failed").to_json,
         headers: { "Content-Type" => "application/json" }
       )
       audio.instance_variable_set(:@polling_interval, 0)

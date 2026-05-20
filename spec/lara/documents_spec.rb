@@ -28,12 +28,12 @@ RSpec.describe Lara::Documents do
         .with(query: hash_including({}))
         .to_return(
           status: 200,
-          body: { "content" => upload_url_response }.to_json,
+          body: upload_url_response.to_json,
           headers: { "Content-Type" => "application/json" }
         )
       stub_request(:post, "#{base_url}/v2/documents").to_return(
         status: 200,
-        body: { "content" => doc_content }.to_json,
+        body: doc_content.to_json,
         headers: { "Content-Type" => "application/json" }
       )
       Tempfile.create(["doc", ".docx"]) do |f|
@@ -54,12 +54,12 @@ RSpec.describe Lara::Documents do
         .with(query: hash_including({}))
         .to_return(
           status: 200,
-          body: { "content" => upload_url_response }.to_json,
+          body: upload_url_response.to_json,
           headers: { "Content-Type" => "application/json" }
         )
       stub_request(:post, "#{base_url}/v2/documents").to_return(
         status: 200,
-        body: { "content" => doc_content }.to_json,
+        body: doc_content.to_json,
         headers: { "Content-Type" => "application/json" }
       )
       Tempfile.create(["doc", ".docx"]) do |f|
@@ -75,7 +75,7 @@ RSpec.describe Lara::Documents do
     it "returns Document" do
       stub_request(:get, "#{base_url}/v2/documents/#{document_id}").to_return(
         status: 200,
-        body: { "content" => doc_content }.to_json,
+        body: doc_content.to_json,
         headers: { "Content-Type" => "application/json" }
       )
       doc = documents.status(document_id)
@@ -90,7 +90,7 @@ RSpec.describe Lara::Documents do
       download_url = "https://s3-fake.example.com/download/#{document_id}"
       stub_request(:get, "#{base_url}/v2/documents/#{document_id}/download-url").to_return(
         status: 200,
-        body: { "content" => { "url" => download_url } }.to_json,
+        body: { "url" => download_url }.to_json,
         headers: { "Content-Type" => "application/json" }
       )
       result = documents.download(document_id)
@@ -107,22 +107,22 @@ RSpec.describe Lara::Documents do
         .with(query: hash_including({}))
         .to_return(
           status: 200,
-          body: { "content" => upload_url_response }.to_json,
+          body: upload_url_response.to_json,
           headers: { "Content-Type" => "application/json" }
         )
       stub_request(:post, "#{base_url}/v2/documents").to_return(
         status: 200,
-        body: { "content" => doc_content.merge("status" => "translated") }.to_json,
+        body: doc_content.merge("status" => "translated").to_json,
         headers: { "Content-Type" => "application/json" }
       )
       stub_request(:get, "#{base_url}/v2/documents/#{document_id}").to_return(
         status: 200,
-        body: { "content" => doc_content.merge("status" => "translated") }.to_json,
+        body: doc_content.merge("status" => "translated").to_json,
         headers: { "Content-Type" => "application/json" }
       )
       stub_request(:get, "#{base_url}/v2/documents/#{document_id}/download-url").to_return(
         status: 200,
-        body: { "content" => { "url" => download_url } }.to_json,
+        body: { "url" => download_url }.to_json,
         headers: { "Content-Type" => "application/json" }
       )
       documents.instance_variable_set(:@polling_interval, 0)
@@ -139,19 +139,18 @@ RSpec.describe Lara::Documents do
         .with(query: hash_including({}))
         .to_return(
           status: 200,
-          body: { "content" => upload_url_response }.to_json,
+          body: upload_url_response.to_json,
           headers: { "Content-Type" => "application/json" }
         )
       stub_request(:post, "#{base_url}/v2/documents").to_return(
         status: 200,
-        body: { "content" => doc_content.merge("id" => document_id,
-                                               "status" => "initialized") }.to_json,
+        body: doc_content.merge("id" => document_id, "status" => "initialized").to_json,
         headers: { "Content-Type" => "application/json" }
       )
       stub_request(:get, "#{base_url}/v2/documents/#{document_id}").to_return(
         status: 200,
-        body: { "content" => doc_content.merge("id" => document_id, "status" => "error",
-                                               "error_reason" => "Conversion failed") }.to_json,
+        body: doc_content.merge("id" => document_id, "status" => "error",
+                                "error_reason" => "Conversion failed").to_json,
         headers: { "Content-Type" => "application/json" }
       )
       documents.instance_variable_set(:@polling_interval, 0)

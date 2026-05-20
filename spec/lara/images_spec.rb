@@ -50,7 +50,7 @@ RSpec.describe Lara::Images do
       }
       stub_request(:post, "#{base_url}/v2/images/translate-text").to_return(
         status: 200,
-        body: { "content" => response_content }.to_json,
+        body: response_content.to_json,
         headers: { "Content-Type" => "application/json" }
       )
       Tempfile.create(["img", ".jpg"]) do |f|
@@ -83,7 +83,7 @@ RSpec.describe Lara::Images do
       }
       stub_request(:post, "#{base_url}/v2/images/translate-text").to_return(
         status: 200,
-        body: { "content" => response_content }.to_json,
+        body: response_content.to_json,
         headers: { "Content-Type" => "application/json" }
       )
       Tempfile.create(["img", ".jpg"]) do |f|

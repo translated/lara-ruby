@@ -12,7 +12,7 @@ RSpec.describe Lara::Translator do
   def stub_translate(body)
     stub_request(:post, "#{base_url}/v2/translate").to_return(
       status: 200,
-      body: { "content" => body }.to_json,
+      body: body.to_json,
       headers: { "Content-Type" => "application/json" }
     )
   end
@@ -20,7 +20,7 @@ RSpec.describe Lara::Translator do
   def stub_languages(content)
     stub_request(:get, "#{base_url}/v2/languages").to_return(
       status: 200,
-      body: { "content" => content }.to_json,
+      body: content.to_json,
       headers: { "Content-Type" => "application/json" }
     )
   end
@@ -114,14 +114,14 @@ RSpec.describe Lara::Translator do
     it "returns DetectResult with language and predictions" do
       stub_request(:post, "#{base_url}/v2/detect/language").to_return(
         status: 200,
-        body: { "content" => {
+        body: {
           "language" => "en",
           "content_type" => "text/plain",
           "predictions" => [
             { "language" => "en", "confidence" => 0.95 },
             { "language" => "de", "confidence" => 0.03 }
           ]
-        } }.to_json,
+        }.to_json,
         headers: { "Content-Type" => "application/json" }
       )
       result = translator.detect("Hello world")
@@ -136,11 +136,11 @@ RSpec.describe Lara::Translator do
     it "sends hint and passlist when provided" do
       stub_request(:post, "#{base_url}/v2/detect/language").to_return(
         status: 200,
-        body: { "content" => {
+        body: {
           "language" => "it",
           "content_type" => "text/plain",
           "predictions" => []
-        } }.to_json,
+        }.to_json,
         headers: { "Content-Type" => "application/json" }
       )
       translator.detect("Ciao", hint: "it", passlist: %w[it en])

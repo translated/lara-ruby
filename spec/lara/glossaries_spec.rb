@@ -16,7 +16,7 @@ RSpec.describe Lara::Glossaries do
   def stub_get(path, content)
     stub_request(:get, "#{base_url}#{path}").to_return(
       status: 200,
-      body: { "content" => content }.to_json,
+      body: content.to_json,
       headers: { "Content-Type" => "application/json" }
     )
   end
@@ -24,7 +24,7 @@ RSpec.describe Lara::Glossaries do
   def stub_post(path, content)
     stub_request(:post, "#{base_url}#{path}").to_return(
       status: 200,
-      body: { "content" => content }.to_json,
+      body: content.to_json,
       headers: { "Content-Type" => "application/json" }
     )
   end
@@ -32,7 +32,7 @@ RSpec.describe Lara::Glossaries do
   def stub_put(path, content)
     stub_request(:put, "#{base_url}#{path}").to_return(
       status: 200,
-      body: { "content" => content }.to_json,
+      body: content.to_json,
       headers: { "Content-Type" => "application/json" }
     )
   end
@@ -40,7 +40,7 @@ RSpec.describe Lara::Glossaries do
   def stub_delete(path, content)
     stub_request(:delete, "#{base_url}#{path}").to_return(
       status: 200,
-      body: { "content" => content }.to_json,
+      body: content.to_json,
       headers: { "Content-Type" => "application/json" }
     )
   end
@@ -83,7 +83,7 @@ RSpec.describe Lara::Glossaries do
       glossary_id = "gls_1Bc2De3Fg4Hi5Jk6Lm7No"
       stub_request(:get, "#{base_url}/v2/glossaries/#{glossary_id}").to_return(
         status: 404,
-        body: { "error" => { "type" => "NotFound", "message" => "Not found" } }.to_json,
+        body: { "type" => "NotFound", "message" => "Not found" }.to_json,
         headers: { "Content-Type" => "application/json" }
       )
       expect(glossaries.get(glossary_id)).to be_nil
@@ -125,7 +125,7 @@ RSpec.describe Lara::Glossaries do
       import_content = { "id" => "imp-1", "channel" => "main", "size" => 50, "progress" => 0 }
       stub_request(:post, "#{base_url}/v2/glossaries/#{glossary_id}/import").to_return(
         status: 200,
-        body: { "content" => import_content }.to_json,
+        body: import_content.to_json,
         headers: { "Content-Type" => "application/json" }
       )
       Tempfile.create(["test", ".csv"]) do |f|
@@ -154,12 +154,12 @@ RSpec.describe Lara::Glossaries do
       stub_request(:get, "#{base_url}/v2/glossaries/imports/imp-1").to_return(
         {
           status: 200,
-          body: { "content" => import_initial }.to_json,
+          body: import_initial.to_json,
           headers: { "Content-Type" => "application/json" }
         },
         {
           status: 200,
-          body: { "content" => import_done }.to_json,
+          body: import_done.to_json,
           headers: { "Content-Type" => "application/json" }
         }
       )
