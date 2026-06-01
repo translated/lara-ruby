@@ -13,11 +13,13 @@ module Lara
     # @param adapt_to [Array<String>, nil] Memory IDs for translation adaptation.
     # @param glossaries [Array<String>, nil] Glossary IDs to apply.
     # @param style [String, nil] Translation style ("faithful", "fluid", "creative").
-    # @param text_removal [String, nil] Text removal method ("overlay" or "inpainting").
+    # @param model [String, nil] Image translation model. One of the +Lara::Models::ImageTranslationModel+ constants
+    #   (+OVERLAY+, +INPAINTING+, +GENERATIVE+, +GENERATIVE_FAST+).
+    # @param text_removal [String, nil] Deprecated. Use +model+ instead.
     # @param no_trace [Boolean] If true, disables request tracing.
     # @return [String] Binary image data of the translated image.
     def translate(file_path:, target:, source: nil, adapt_to: nil, glossaries: nil,
-                  style: nil, text_removal: nil, no_trace: false)
+                  style: nil, model: nil, text_removal: nil, no_trace: false)
       image_upload = Faraday::Multipart::FilePart.new(file_path, mime_type_for(file_path))
 
       body = {
@@ -26,7 +28,7 @@ module Lara
         adapt_to: adapt_to&.to_json,
         glossaries: glossaries&.to_json,
         style: style,
-        text_removal: text_removal
+        model: model || text_removal
       }.compact
 
       headers = {}

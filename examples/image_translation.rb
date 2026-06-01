@@ -41,7 +41,7 @@ def main
       file_path: sample_file_path,
       source: source_lang,
       target: target_lang,
-      text_removal: "overlay"
+      model: Lara::Models::ImageTranslationModel::OVERLAY
     )
 
     output_path = "sample_image_translated.png"
@@ -61,10 +61,10 @@ def main
       file_path: sample_file_path,
       source: source_lang,
       target: target_lang,
-      adapt_to: ["mem_1A2b3C4d5E6f7G8h9I0jKl"],      # Replace with actual memory IDs
-      glossaries: ["gls_1A2b3C4d5E6f7G8h9I0jKl"],     # Replace with actual glossary IDs
+      adapt_to: ["mem_1A2b3C4d5E6f7G8h9I0jKl"], # Replace with actual memory IDs
+      glossaries: ["gls_1A2b3C4d5E6f7G8h9I0jKl"], # Replace with actual glossary IDs
       style: "faithful",
-      text_removal: "inpainting"
+      model: Lara::Models::ImageTranslationModel::INPAINTING
     )
 
     output_path2 = "advanced_image_translated.png"
@@ -84,8 +84,8 @@ def main
       file_path: sample_file_path,
       source: source_lang,
       target: target_lang,
-      adapt_to: ["mem_1A2b3C4d5E6f7G8h9I0jKl"],      # Replace with actual memory IDs
-      glossaries: ["gls_1A2b3C4d5E6f7G8h9I0jKl"],     # Replace with actual glossary IDs
+      adapt_to: ["mem_1A2b3C4d5E6f7G8h9I0jKl"], # Replace with actual memory IDs
+      glossaries: ["gls_1A2b3C4d5E6f7G8h9I0jKl"], # Replace with actual glossary IDs
       style: "faithful"
     )
 

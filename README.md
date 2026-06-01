@@ -315,7 +315,7 @@ translated_image = lara.images.translate(
   file_path: "/path/to/your/image.png",  # Replace with actual file path
   source: "en",
   target: "fr",
-  text_removal: "inpainting",
+  model: Lara::Models::ImageTranslationModel::INPAINTING,
   style: "faithful"
 )
 

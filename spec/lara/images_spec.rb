@@ -37,6 +37,53 @@ RSpec.describe Lara::Images do
                                           "#{base_url}/v2/images/translate").with(headers: { "X-No-Trace" => "true" })
       end
     end
+
+    it "sends model param when model is provided" do
+      stub_request(:post, "#{base_url}/v2/images/translate").to_return(
+        status: 200,
+        body: "bytes",
+        headers: { "Content-Type" => "image/png" }
+      )
+      Tempfile.create(["img", ".png"]) do |f|
+        f.rewind
+        images.translate(file_path: f.path, target: "it", model: Lara::Models::ImageTranslationModel::GENERATIVE)
+        expect(WebMock).to(have_requested(:post, "#{base_url}/v2/images/translate").with do |req|
+          req.body.include?("generative")
+        end)
+      end
+    end
+
+    it "falls back to text_removal when model is not provided (backward compat)" do
+      stub_request(:post, "#{base_url}/v2/images/translate").to_return(
+        status: 200,
+        body: "bytes",
+        headers: { "Content-Type" => "image/png" }
+      )
+      Tempfile.create(["img", ".png"]) do |f|
+        f.rewind
+        images.translate(file_path: f.path, target: "it", text_removal: "inpainting")
+        expect(WebMock).to(have_requested(:post, "#{base_url}/v2/images/translate").with do |req|
+          req.body.include?("inpainting")
+        end)
+      end
+    end
+
+    it "prefers model over text_removal when both are provided" do
+      stub_request(:post, "#{base_url}/v2/images/translate").to_return(
+        status: 200,
+        body: "bytes",
+        headers: { "Content-Type" => "image/png" }
+      )
+      Tempfile.create(["img", ".png"]) do |f|
+        f.rewind
+        images.translate(file_path: f.path, target: "it",
+                         model: Lara::Models::ImageTranslationModel::GENERATIVE_FAST,
+                         text_removal: "overlay")
+        expect(WebMock).to(have_requested(:post, "#{base_url}/v2/images/translate").with do |req|
+          req.body.include?("generative_fast")
+        end)
+      end
+    end
   end
 
   describe "#translate_text" do
@@ -73,10 +120,12 @@ RSpec.describe Lara::Images do
             "text" => "Hello",
             "translation" => "Ciao",
             "adaptedToMatches" => [
-              { "memory" => "mem_1", "language" => "it", "sentence" => "Hello", "translation" => "Ciao" }
+              { "memory" => "mem_1", "language" => "it", "sentence" => "Hello",
+                "translation" => "Ciao" }
             ],
             "glossariesMatches" => [
-              { "glossary" => "gls_1", "language" => "it", "term" => "Hello", "translation" => "Ciao" }
+              { "glossary" => "gls_1", "language" => "it", "term" => "Hello",
+                "translation" => "Ciao" }
             ]
           }
         ]

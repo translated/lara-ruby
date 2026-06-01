@@ -5,6 +5,19 @@ require_relative "text"
 
 module Lara
   module Models
+    module ImageTranslationModel
+      OVERLAY         = "overlay"
+      INPAINTING      = "inpainting"
+      GENERATIVE      = "generative"
+      GENERATIVE_FAST = "generative_fast"
+
+      ALL = [OVERLAY, INPAINTING, GENERATIVE, GENERATIVE_FAST].freeze
+
+      def self.valid?(value)
+        ALL.include?(value)
+      end
+    end
+
     class ImageParagraph < Base
       attr_reader :text, :translation, :adapted_to_matches, :glossaries_matches
 
