@@ -157,6 +157,15 @@ cd examples
 ruby glossaries_management.rb
 ```
 
+### Styleguide Management
+- **[styleguides_management.rb](examples/styleguides_management.rb)** - Styleguide management examples
+  - Create, list, get, update, delete styleguides
+
+```bash
+cd examples
+ruby styleguides_management.rb
+```
+
 ## 🔧 API Reference
 
 ### Core Components
@@ -500,14 +509,39 @@ counts = lara.glossaries.counts("gls_1A2b3C4d5E6f7G8h9I0jKl")
 
 ### 🎨 Styleguides
 
-Styleguides let you apply custom translation style rules. They can be listed and retrieved through the SDK.
+Styleguides let you apply custom translation style rules. Create, list, get, update, and delete them through the SDK.
 
 ```ruby
+# Create styleguide
+styleguide = lara.styleguides.create(
+  name: "MyStyleguide",
+  content: "Use a formal tone. Prefer British English spelling. Avoid contractions."
+)
+
 # List all styleguides
 styleguides = lara.styleguides.list
 
 # Get a specific styleguide by ID
 styleguide = lara.styleguides.get("stg_1A2b3C4d5E6f7G8h9I0jKl")
+
+# Update only the name
+renamed = lara.styleguides.update("stg_1A2b3C4d5E6f7G8h9I0jKl", name: "UpdatedName")
+
+# Update only the content
+updated_content = lara.styleguides.update(
+  "stg_1A2b3C4d5E6f7G8h9I0jKl",
+  content: "Use a casual tone. Prefer American English spelling."
+)
+
+# Update both name and content
+updated = lara.styleguides.update(
+  "stg_1A2b3C4d5E6f7G8h9I0jKl",
+  name: "FinalName",
+  content: "Use clear and concise language. Avoid jargon."
+)
+
+# Delete a styleguide
+deleted = lara.styleguides.delete("stg_1A2b3C4d5E6f7G8h9I0jKl")
 ```
 
 #### Translate with a styleguide
