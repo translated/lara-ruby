@@ -146,7 +146,7 @@ ruby memories_management.rb
   - Create, list, update, delete glossaries
   - Individual term management (add/remove terms)
   - CSV import with status monitoring
-  - Glossary export
+  - Glossary export (sync and async)
   - Glossary terms count
   - Import status checking
   - Add or replace glossary entries
@@ -502,6 +502,14 @@ csv_data = lara.glossaries.export("gls_1A2b3C4d5E6f7G8h9I0jKl",
 # Export glossary (multidirectional)
 csv_data = lara.glossaries.export("gls_1A2b3C4d5E6f7G8h9I0jKl",
                                   content_type: Lara::Glossaries::FileFormat::MULTIDIRECTIONAL)
+
+# Async glossary export — returns a job_id; the result is delivered to your callback URL when ready
+export_job = lara.glossaries.export_async(
+  "gls_1A2b3C4d5E6f7G8h9I0jKl",
+  callback_url: "https://your-server.example.com/lara/export-callback",
+  content_type: Lara::Glossaries::FileFormat::UNIDIRECTIONAL,
+  source: "en-US"
+)
 
 # Get glossary terms count (includes both unidirectional and multidirectional counts)
 counts = lara.glossaries.counts("gls_1A2b3C4d5E6f7G8h9I0jKl")

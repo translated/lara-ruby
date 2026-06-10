@@ -8,7 +8,7 @@ require "lara"
 # - Create, list, update, delete glossaries
 # - Individual term management (add/remove terms)
 # - CSV import with status monitoring
-# - Glossary export (unidirectional and multidirectional)
+# - Glossary export (sync and async, unidirectional and multidirectional)
 # - Glossary terms count (unidirectional and multidirectional)
 # - Import status checking
 # - Add or replace glossary entries (with and without GUID)
@@ -76,7 +76,7 @@ def main
       lara.glossaries.add_or_replace_entry(glossary_id, terms)
       puts "✅ Terms added successfully to glossary"
       puts
-    rescue => e
+    rescue StandardError => e
       puts "⚠️  Could not add terms: #{e.message}\n"
     end
 
@@ -86,7 +86,7 @@ def main
       lara.glossaries.delete_entry(glossary_id, term: term_to_remove)
       puts "✅ Term removed successfully from glossary"
       puts
-    rescue => e
+    rescue StandardError => e
       puts "⚠️  Could not remove term: #{e.message}\n"
     end
 
@@ -120,6 +120,26 @@ def main
       puts "CSV file not found: #{csv_file_path}"
     end
 
+    # Example 4: CSV import with a callback URL (async notification when import completes)
+    puts "=== CSV Import with Callback URL ==="
+    if File.exist?(csv_file_path)
+      begin
+        callback_url = "https://your-server.example.com/lara/import-callback" # Replace with your endpoint
+        import_with_callback = lara.glossaries.import_csv(glossary_id, csv_file_path,
+                                                          callback_url: callback_url)
+        puts "Import started with ID: #{import_with_callback.id} (callback: #{callback_url})"
+
+        # You can also combine content_type, gzip, and callback_url:
+        # lara.glossaries.import_csv(glossary_id, csv_file_path,
+        #                            content_type: Lara::Glossaries::FileFormat::MULTIDIRECTIONAL,
+        #                            gzip: true,
+        #                            callback_url: callback_url)
+        puts
+      rescue StandardError => e
+        puts "Error starting CSV import with callback: #{e.message}\n"
+      end
+    end
+
     # Example 5: Export functionality
     puts "=== Export Functionality ==="
     begin
@@ -141,6 +161,17 @@ def main
       File.binwrite(export_multi_file_path, csv_multi_data)
       puts "💾 Sample unidirectional export saved to: #{export_uni_file_path}"
       puts "💾 Sample multidirectional export saved to: #{export_multi_file_path}"
+
+      # Async export — returns a job_id; the result is delivered to your callback URL when ready
+      puts "📤 Starting async export..."
+      export_job = lara.glossaries.export_async(
+        glossary_id,
+        callback_url: "https://your-server.example.com/lara/export-callback", # Replace with your actual callback URL
+        content_type: Lara::Glossaries::FileFormat::UNIDIRECTIONAL,
+        source: "en-US"
+      )
+      puts "✅ Async export started (job ID: #{export_job.job_id})"
+      puts "   The export result will be delivered to your callback URL when ready."
       puts
     rescue StandardError => e
       puts "Error with export: #{e.message}\n"
@@ -196,7 +227,8 @@ def main
         { language: "en-US", value: "keyboard" },
         { language: "it-IT", value: "tastiera" }
       ]
-      add_with_guid_result = lara.glossaries.add_or_replace_entry(glossary_id, terms_with_guid, guid: "custom-guid-123")
+      add_with_guid_result = lara.glossaries.add_or_replace_entry(glossary_id, terms_with_guid,
+                                                                  guid: "custom-guid-123")
       puts "✅ Entry added with GUID (import ID: #{add_with_guid_result.id})"
       lara.glossaries.wait_for_import(add_with_guid_result)
 
@@ -206,7 +238,8 @@ def main
         { language: "it-IT", value: "tastiera" },
         { language: "fr-FR", value: "clavier" }
       ]
-      replace_result = lara.glossaries.add_or_replace_entry(glossary_id, updated_terms, guid: "custom-guid-123")
+      replace_result = lara.glossaries.add_or_replace_entry(glossary_id, updated_terms,
+                                                            guid: "custom-guid-123")
       puts "✅ Entry replaced with updated terms (import ID: #{replace_result.id})"
       lara.glossaries.wait_for_import(replace_result)
       puts
@@ -231,7 +264,6 @@ def main
     rescue StandardError => e
       puts "Error deleting entry: #{e.message}\n"
     end
-
   rescue StandardError => e
     puts "Error creating glossary: #{e.message}\n"
     return

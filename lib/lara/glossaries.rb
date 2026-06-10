@@ -18,6 +18,7 @@ module Lara
         all.include?(format)
       end
     end
+
     def initialize(client)
       @client = client
       @polling_interval = 2
@@ -62,26 +63,35 @@ module Lara
     end
 
     # @param content_type [String] Either FileFormat::UNIDIRECTIONAL or FileFormat::MULTIDIRECTIONAL
+    # @param gzip [Boolean] When true, compress the CSV before upload and set compression=gzip
+    # @param callback_url [String,nil] Optional URL notified when the import completes
     # @return [Lara::Models::GlossaryImport]
-    def import_csv(id, csv_path, content_type: FileFormat::UNIDIRECTIONAL, gzip: true)
+    def import_csv(id, csv_path, content_type: FileFormat::UNIDIRECTIONAL, gzip: false,
+                   callback_url: nil)
       unless FileFormat.valid?(content_type)
         raise ArgumentError, "Invalid content_type. Supported formats: #{FileFormat.all.join(', ')}"
       end
 
-      require "stringio"
-      require "zlib"
       basename = File.basename(csv_path)
+      if gzip
+        require "stringio"
+        require "zlib"
 
-      buffer = StringIO.new
-      gz = Zlib::GzipWriter.new(buffer, 7, Zlib::DEFAULT_STRATEGY)
-      File.open(csv_path, "rb") { |_f| IO.copy_stream(_f, gz) }
-      gz.finish
-      buffer.rewind
+        buffer = StringIO.new
+        gz = Zlib::GzipWriter.new(buffer, 7, Zlib::DEFAULT_STRATEGY)
+        File.open(csv_path, "rb") { |_f| IO.copy_stream(_f, gz) }
+        gz.finish
+        buffer.rewind
 
-      body = { "compression" => "gzip" }
+        body = { "compression" => "gzip" }
+        files = { "csv" => Faraday::UploadIO.new(buffer, "application/gzip", "#{basename}.gz") }
+      else
+        body = {}
+        files = { "csv" => Faraday::UploadIO.new(csv_path, "text/csv", basename) }
+      end
+
       body["content_type"] = content_type unless content_type == FileFormat::UNIDIRECTIONAL
-
-      files = { "csv" => Faraday::UploadIO.new(buffer, "application/gzip", "#{basename}.gz") }
+      body["callback_url"] = callback_url if callback_url
       Lara::Models::GlossaryImport.new(**@client.post("/v2/glossaries/#{id}/import",
                                                       body: body, files: files).transform_keys(&:to_sym))
     end
@@ -120,6 +130,21 @@ module Lara
                   params: { content_type: content_type, source: source }.compact)
     end
 
+    # @param callback_url [String] URL notified when the export is ready
+    # @param content_type [String] Either FileFormat::UNIDIRECTIONAL or FileFormat::MULTIDIRECTIONAL
+    # @param source [String, nil] Optional source language (unidirectional exports only)
+    # @return [Lara::Models::GlossaryExport]
+    def export_async(id, callback_url:, content_type: FileFormat::UNIDIRECTIONAL, source: nil)
+      unless FileFormat.valid?(content_type)
+        raise ArgumentError, "Invalid content_type. Supported formats: #{FileFormat.all.join(', ')}"
+      end
+
+      params = { callback_url: callback_url, content_type: content_type }
+      params[:source] = source if source
+      Lara::Models::GlossaryExport.new(**@client.get("/v2/glossaries/#{id}/export/async",
+                                                     params: params).transform_keys(&:to_sym))
+    end
+
     # @param glossary_id [String] The glossary ID
     # @param terms [Array<Hash>] Array of term hashes with :language and :value keys
     # @param guid [String, nil] Optional unique identifier for multidirectional glossary units
@@ -128,7 +153,8 @@ module Lara
       body = { terms: terms }
       body[:guid] = guid if guid
 
-      Lara::Models::GlossaryImport.new(**@client.put("/v2/glossaries/#{glossary_id}/content", body: body).transform_keys(&:to_sym))
+      Lara::Models::GlossaryImport.new(**@client.put("/v2/glossaries/#{glossary_id}/content",
+                                                     body: body).transform_keys(&:to_sym))
     end
 
     # @param glossary_id [String] The glossary ID
@@ -140,7 +166,8 @@ module Lara
       body[:guid] = guid if guid
       body[:term] = term if term
 
-      Lara::Models::GlossaryImport.new(**@client.delete("/v2/glossaries/#{glossary_id}/content", body: body).transform_keys(&:to_sym))
+      Lara::Models::GlossaryImport.new(**@client.delete("/v2/glossaries/#{glossary_id}/content",
+                                                        body: body).transform_keys(&:to_sym))
     end
   end
 end

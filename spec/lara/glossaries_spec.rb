@@ -111,7 +111,8 @@ RSpec.describe Lara::Glossaries do
   describe "#counts" do
     it "returns GlossaryCounts" do
       glossary_id = "gls_1Bc2De3Fg4Hi5Jk6Lm7No"
-      stub_get("/v2/glossaries/#{glossary_id}/counts", "unidirectional" => 10, "multidirectional" => 5)
+      stub_get("/v2/glossaries/#{glossary_id}/counts", "unidirectional" => 10,
+                                                       "multidirectional" => 5)
       c = glossaries.counts(glossary_id)
       expect(c).to be_a(Lara::Models::GlossaryCounts)
       expect(c.unidirectional).to eq(10)
@@ -120,7 +121,7 @@ RSpec.describe Lara::Glossaries do
   end
 
   describe "#import_csv" do
-    it "uploads gzipped csv and returns GlossaryImport" do
+    it "uploads uncompressed csv by default and returns GlossaryImport" do
       glossary_id = "gls_1Bc2De3Fg4Hi5Jk6Lm7No"
       import_content = { "id" => "imp-1", "channel" => "main", "size" => 50, "progress" => 0 }
       stub_request(:post, "#{base_url}/v2/glossaries/#{glossary_id}/import").to_return(
@@ -134,6 +135,51 @@ RSpec.describe Lara::Glossaries do
         imp = glossaries.import_csv(glossary_id, f.path)
         expect(imp).to be_a(Lara::Models::GlossaryImport)
         expect(imp.id).to eq("imp-1")
+        expect(WebMock).to(have_requested(:post,
+                                          "#{base_url}/v2/glossaries/#{glossary_id}/import").with do |req|
+          req.body.include?("term,translation") && !req.body.include?("compression")
+        end)
+      end
+    end
+
+    it "uploads gzipped csv when gzip is true" do
+      glossary_id = "gls_1Bc2De3Fg4Hi5Jk6Lm7No"
+      import_content = { "id" => "imp-1", "channel" => "main", "size" => 50, "progress" => 0 }
+      stub_request(:post, "#{base_url}/v2/glossaries/#{glossary_id}/import").to_return(
+        status: 200,
+        body: import_content.to_json,
+        headers: { "Content-Type" => "application/json" }
+      )
+      Tempfile.create(["test", ".csv"]) do |f|
+        f.write("term,translation\nhello,ciao")
+        f.rewind
+        imp = glossaries.import_csv(glossary_id, f.path, gzip: true)
+        expect(imp.id).to eq("imp-1")
+        expect(WebMock).to(have_requested(:post,
+                                          "#{base_url}/v2/glossaries/#{glossary_id}/import").with do |req|
+          req.body.include?("compression")
+        end)
+      end
+    end
+
+    it "sends callback_url when provided" do
+      glossary_id = "gls_1Bc2De3Fg4Hi5Jk6Lm7No"
+      callback_url = "https://example.com/callback"
+      import_content = { "id" => "imp-1", "channel" => "main", "size" => 50, "progress" => 0 }
+      stub_request(:post, "#{base_url}/v2/glossaries/#{glossary_id}/import").to_return(
+        status: 200,
+        body: import_content.to_json,
+        headers: { "Content-Type" => "application/json" }
+      )
+      Tempfile.create(["test", ".csv"]) do |f|
+        f.write("term,translation\nhello,ciao")
+        f.rewind
+        imp = glossaries.import_csv(glossary_id, f.path, callback_url: callback_url)
+        expect(imp).to be_a(Lara::Models::GlossaryImport)
+        expect(WebMock).to(have_requested(:post,
+                                          "#{base_url}/v2/glossaries/#{glossary_id}/import").with do |req|
+          req.body.include?("callback_url") && req.body.include?(callback_url)
+        end)
       end
     end
   end
@@ -172,6 +218,46 @@ RSpec.describe Lara::Glossaries do
     end
   end
 
+  describe "#export_async" do
+    it "calls get with query params and returns GlossaryExport" do
+      glossary_id = "gls_1Bc2De3Fg4Hi5Jk6Lm7No"
+      export_content = { "job_id" => "export-1" }
+      stub_request(:get, "#{base_url}/v2/glossaries/#{glossary_id}/export/async")
+        .with(query: {
+                "callback_url" => "https://example.com/cb",
+                "content_type" => "csv/table-uni",
+                "source" => "en-US"
+              })
+        .to_return(
+          status: 200,
+          body: export_content.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+      export_job = glossaries.export_async(glossary_id, callback_url: "https://example.com/cb",
+                                                        content_type: "csv/table-uni", source: "en-US")
+      expect(export_job).to be_a(Lara::Models::GlossaryExport)
+      expect(export_job.job_id).to eq("export-1")
+    end
+
+    it "omits source for multidirectional export" do
+      glossary_id = "gls_1Bc2De3Fg4Hi5Jk6Lm7No"
+      export_content = { "job_id" => "export-multi" }
+      stub_request(:get, "#{base_url}/v2/glossaries/#{glossary_id}/export/async")
+        .with(query: {
+                "callback_url" => "https://example.com/cb",
+                "content_type" => "csv/table-multi"
+              })
+        .to_return(
+          status: 200,
+          body: export_content.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+      export_job = glossaries.export_async(glossary_id, callback_url: "https://example.com/cb",
+                                                        content_type: "csv/table-multi")
+      expect(export_job.job_id).to eq("export-multi")
+    end
+  end
+
   describe "#export" do
     it "returns CSV bytes" do
       glossary_id = "gls_1Bc2De3Fg4Hi5Jk6Lm7No"
@@ -204,7 +290,8 @@ RSpec.describe Lara::Glossaries do
       glossary_id = "gls_1Bc2De3Fg4Hi5Jk6Lm7No"
       import_content = { "id" => "imp-3", "channel" => "main", "size" => 0, "progress" => 1.0 }
       stub_delete("/v2/glossaries/#{glossary_id}/content", import_content)
-      imp = glossaries.delete_entry(glossary_id, term: { language: "en", value: "hello" }, guid: "guid-1")
+      imp = glossaries.delete_entry(glossary_id, term: { language: "en", value: "hello" },
+                                                 guid: "guid-1")
       expect(imp).to be_a(Lara::Models::GlossaryImport)
       expect(imp.id).to eq("imp-3")
     end
