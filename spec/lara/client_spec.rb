@@ -16,7 +16,7 @@ RSpec.describe Lara::Client do
           end
     stub_request(method.downcase.to_sym, url).to_return(
       status: status,
-      body: (response_body.is_a?(Hash) || response_body.is_a?(Array)) ? response_body.to_json : response_body,
+      body: response_body.is_a?(Hash) || response_body.is_a?(Array) ? response_body.to_json : response_body,
       headers: { "Content-Type" => content_type }
     )
   end
@@ -90,7 +90,8 @@ RSpec.describe Lara::Client do
         .with(query: { "content_type" => "csv/table-uni" })
         .to_return(status: 200, body: "term,translation\nhello,ciao",
                    headers: { "Content-Type" => "text/csv" })
-      result = client.get("/glossaries/#{glossary_id}/export", params: { content_type: "csv/table-uni" })
+      result = client.get("/glossaries/#{glossary_id}/export",
+                          params: { content_type: "csv/table-uni" })
       expect(result).to eq("term,translation\nhello,ciao")
     end
   end
@@ -111,8 +112,15 @@ RSpec.describe Lara::Client do
   end
 
   describe "authentication" do
+    def fake_jwt(exp_offset: 3600)
+      payload = Base64.urlsafe_encode64({ "exp" => (Time.now.to_f + exp_offset).to_i }.to_json,
+                                        padding: false)
+      "eyJhbGciOiJIUzI1NiJ9.#{payload}.fakesig"
+    end
+
     it "initializes with AuthToken and skips authenticate" do
-      payload = Base64.urlsafe_encode64({ "exp" => (Time.now.to_f + 3600).to_i }.to_json, padding: false)
+      payload = Base64.urlsafe_encode64({ "exp" => (Time.now.to_f + 3600).to_i }.to_json,
+                                        padding: false)
       fake_jwt = "eyJhbGciOiJIUzI1NiJ9.#{payload}.fakesig"
       token = Lara::AuthToken.new(fake_jwt, "refresh-token")
       c = described_class.new(token, base_url: base_url)
@@ -142,6 +150,100 @@ RSpec.describe Lara::Client do
       )
       result = client.post("/test", body: { q: "x" })
       expect(result).to eq("result" => "success")
+    end
+
+    it "authenticates successfully when auth response omits refresh token" do
+      stub_request(:post, "#{base_url}/v2/auth").to_return(
+        status: 200,
+        body: { "token" => fake_jwt }.to_json,
+        headers: { "Content-Type" => "application/json" }
+      )
+      stub_api("GET", "/languages", response_body: %w[en-US it-IT])
+      result = client.get("/languages")
+      expect(result).to eq(%w[en-US it-IT])
+    end
+
+    it "reauthenticates with credentials when token expires and no refresh token" do
+      stub_request(:post, "#{base_url}/v2/auth").to_return(
+        status: 200,
+        body: { "token" => fake_jwt(exp_offset: -3600) }.to_json,
+        headers: { "Content-Type" => "application/json" }
+      )
+      stub_api("GET", "/languages", response_body: [])
+
+      client.get("/languages")
+      client.get("/languages")
+
+      expect(WebMock).to have_requested(:post, "#{base_url}/v2/auth").twice
+      expect(WebMock).not_to have_requested(:post, "#{base_url}/v2/auth/refresh")
+    end
+
+    it "resets the refresh token when the refresh response omits the header" do
+      token = Lara::AuthToken.new(fake_jwt, "my-refresh-token")
+      c = described_class.new(token, base_url: base_url)
+
+      stub_request(:post, "#{base_url}/test").to_return(
+        { status: 401,
+          body: { "type" => "AuthError", "message" => "jwt expired" }.to_json,
+          headers: { "Content-Type" => "application/json" } },
+        { status: 200,
+          body: { "result" => "success" }.to_json,
+          headers: { "Content-Type" => "application/json" } }
+      )
+      # Refresh succeeds but returns a token-only response (no rotated refresh token).
+      stub_request(:post, "#{base_url}/v2/auth/refresh").to_return(
+        status: 200,
+        body: { "token" => "new-jwt" }.to_json,
+        headers: { "Content-Type" => "application/json" }
+      )
+
+      result = c.post("/test", body: { q: "x" })
+      expect(result).to eq("result" => "success")
+      expect(WebMock).to(have_requested(:post, "#{base_url}/v2/auth/refresh")
+        .with { |req| req.headers["Authorization"] == "Bearer my-refresh-token" }.once)
+
+      # The consumed refresh token must be discarded: with no credentials to fall back
+      # on, the next renewal has no authentication method available.
+      expect { c.post("/test", body: { q: "x" }) }
+        .to raise_error(Lara::LaraError, /No authentication method available/)
+      expect(WebMock).to(have_requested(:post, "#{base_url}/v2/auth/refresh").once)
+    end
+
+    it "uses the rotated refresh token for the subsequent renewal" do
+      token = Lara::AuthToken.new(fake_jwt, "refresh-1")
+      c = described_class.new(token, base_url: base_url)
+
+      stub_request(:post, "#{base_url}/test").to_return(
+        { status: 401,
+          body: { "type" => "AuthError", "message" => "jwt expired" }.to_json,
+          headers: { "Content-Type" => "application/json" } },
+        { status: 200,
+          body: { "result" => "first" }.to_json,
+          headers: { "Content-Type" => "application/json" } },
+        { status: 401,
+          body: { "type" => "AuthError", "message" => "jwt expired" }.to_json,
+          headers: { "Content-Type" => "application/json" } },
+        { status: 200,
+          body: { "result" => "second" }.to_json,
+          headers: { "Content-Type" => "application/json" } }
+      )
+      # Each refresh rotates the token, handing back the next one in the header.
+      stub_request(:post, "#{base_url}/v2/auth/refresh").to_return(
+        { status: 200,
+          body: { "token" => fake_jwt(exp_offset: 7200) }.to_json,
+          headers: { "Content-Type" => "application/json", "x-lara-refresh-token" => "refresh-2" } },
+        { status: 200,
+          body: { "token" => fake_jwt(exp_offset: 7200) }.to_json,
+          headers: { "Content-Type" => "application/json", "x-lara-refresh-token" => "refresh-3" } }
+      )
+
+      expect(c.post("/test", body: { q: "x" })).to eq("result" => "first")
+      expect(c.post("/test", body: { q: "x" })).to eq("result" => "second")
+
+      expect(a_request(:post, "#{base_url}/v2/auth/refresh")
+        .with(headers: { "Authorization" => "Bearer refresh-1" })).to have_been_made.once
+      expect(a_request(:post, "#{base_url}/v2/auth/refresh")
+        .with(headers: { "Authorization" => "Bearer refresh-2" })).to have_been_made.once
     end
 
     it "raises non-jwt-expired 401 without retrying" do

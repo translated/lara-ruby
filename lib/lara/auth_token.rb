@@ -10,7 +10,7 @@ module Lara
 
     def initialize(token, refresh_token)
       @token = token
-      @refresh_token = refresh_token
+      @refresh_token = refresh_token.nil? || refresh_token.empty? ? nil : refresh_token
       @expires_at_ms = parse_expires_at_ms(token)
     end
 

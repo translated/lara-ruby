@@ -64,7 +64,8 @@ module Lara
     # @yield [Hash] Each partial JSON result from the stream (if streaming)
     # @return [Hash, Array, String, nil] The JSON 'content' from the API, CSV body, or raw bytes.
     def post(path, body: nil, files: nil, headers: nil, raw_response: false, &callback)
-      request(:post, path, body: body, files: files, headers: headers, raw_response: raw_response, &callback)
+      request(:post, path, body: body, files: files, headers: headers, raw_response: raw_response,
+              &callback)
     end
 
     # Sends a PUT request to the Lara API.
@@ -88,17 +89,18 @@ module Lara
 
     private
 
-    def request(method, path, body: nil, files: nil, headers: nil, params: nil, raw_response: false, &callback)
+    def request(method, path, body: nil, files: nil, headers: nil, params: nil,
+                raw_response: false, &callback)
       ensure_valid_token
 
       make_request(method, path, body: body, files: files, headers: headers, params: params,
-                   raw_response: raw_response, &callback)
+                                 raw_response: raw_response, &callback)
     rescue LaraApiError => e
       raise unless e.status_code == 401
 
       @auth_mutex.synchronize { refresh_or_reauthenticate }
       make_request(method, path, body: body, files: files, headers: headers, params: params,
-                   raw_response: raw_response, &callback)
+                                 raw_response: raw_response, &callback)
     end
 
     def ensure_valid_token
@@ -110,7 +112,7 @@ module Lara
     end
 
     def refresh_or_reauthenticate
-      if @auth_token&.refresh_token && !@auth_token.refresh_token.empty?
+      if @auth_token&.refresh_token
         begin
           do_refresh
           return
@@ -160,8 +162,6 @@ module Lara
       data = JSON.parse(response.body)
       refresh_token_value = response.headers["x-lara-refresh-token"]
 
-      raise LaraError, "Missing refresh token in authentication response" unless refresh_token_value
-
       AuthToken.new(data["token"], refresh_token_value)
     end
 
@@ -186,12 +186,11 @@ module Lara
       data = JSON.parse(response.body)
       refresh_token_value = response.headers["x-lara-refresh-token"]
 
-      raise LaraError, "Missing refresh token in refresh response" unless refresh_token_value
-
       @auth_token = AuthToken.new(data["token"], refresh_token_value)
     end
 
-    def make_request(method, path, body: nil, files: nil, headers: nil, params: nil, raw_response: false, &callback)
+    def make_request(method, path, body: nil, files: nil, headers: nil, params: nil,
+                     raw_response: false, &callback)
       path = "/#{path}" unless path.start_with?("/")
       request_headers = build_request_headers(body, files, headers)
 
@@ -248,7 +247,7 @@ module Lara
 
         begin
           result = JSON.parse(trimmed_line)
-          block.call(result) if block
+          block&.call(result)
           last_result = result
         rescue JSON::ParserError
           next
@@ -258,7 +257,7 @@ module Lara
       if !buffer.empty? && buffer.strip != ""
         begin
           result = JSON.parse(buffer.strip)
-          block.call(result) if block
+          block&.call(result)
           last_result = result
         rescue JSON::ParserError
         end
