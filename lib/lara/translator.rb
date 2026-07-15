@@ -11,8 +11,9 @@ module Lara
     # @param base_url [String,nil]
     # @param connection_timeout [Integer,nil]
     # @param read_timeout [Integer,nil]
+    # @param session_id [String,nil]
     def initialize(credentials: nil, auth_token: nil, access_key_id: nil, access_key_secret: nil,
-                   base_url: nil, connection_timeout: nil, read_timeout: nil)
+                   base_url: nil, connection_timeout: nil, read_timeout: nil, session_id: nil)
       auth_method = if auth_token
                       auth_token
                     elsif credentials
@@ -25,7 +26,8 @@ module Lara
                     end
 
       @client = Client.new(auth_method, base_url: base_url,
-                                        connection_timeout: connection_timeout, read_timeout: read_timeout)
+                                        connection_timeout: connection_timeout, read_timeout: read_timeout,
+                                        session_id: session_id)
       @memories = Memories.new(@client)
       @glossaries = Glossaries.new(@client)
       @styleguides = Styleguides.new(@client)
@@ -140,7 +142,8 @@ module Lara
     # @return [Lara::Models::ProfanityDetectResult]
     def detect_profanities(text, language:, content_type: "text/plain")
       unless VALID_CONTENT_TYPES.include?(content_type)
-        raise ArgumentError, "Invalid content_type '#{content_type}'. Must be one of: #{VALID_CONTENT_TYPES.join(', ')}"
+        raise ArgumentError,
+              "Invalid content_type '#{content_type}'. Must be one of: #{VALID_CONTENT_TYPES.join(', ')}"
       end
 
       body = { text: text, language: language, content_type: content_type }

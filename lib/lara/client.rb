@@ -16,7 +16,7 @@ module Lara
     DEFAULT_BASE_URL = "https://api.laratranslate.com"
 
     def initialize(auth_method, base_url: DEFAULT_BASE_URL, connection_timeout: nil,
-                   read_timeout: nil)
+                   read_timeout: nil, session_id: nil)
       case auth_method
       when Credentials
         @credentials = auth_method
@@ -31,6 +31,7 @@ module Lara
       @base_url = base_url.to_s.sub(%r{/+$}, "")
       @connection_timeout = connection_timeout
       @read_timeout = read_timeout
+      @session_id = session_id
       @extra_headers = {}
       @auth_mutex = Monitor.new
 
@@ -147,6 +148,8 @@ module Lara
         "Authorization" => "Lara:#{generate_hmac_signature(method, path, content_md5,
                                                            'application/json', timestamp)}"
       }
+
+      headers["X-Lara-Auth-Session-Id"] = @session_id if @session_id && !@session_id.empty?
 
       conn = Faraday.new(url: @base_url) do |c|
         c.adapter Faraday.default_adapter
