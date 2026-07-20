@@ -160,4 +160,136 @@ RSpec.describe Lara::AudioTranslator do
       end
     end
   end
+
+  def transcript_content
+    {
+      "id" => audio_id,
+      "source" => "en-US",
+      "target" => "de-DE",
+      "filename" => "test.mp3",
+      "duration" => 12.5,
+      "text" => "Hello world",
+      "translation" => "Hallo Welt",
+      "segments" => [
+        { "id" => 1, "start" => 0.0, "end" => 2.5, "text" => "Hello world",
+          "translation" => "Hallo Welt" }
+      ]
+    }
+  end
+
+  describe "#upload_for_transcription" do
+    it "fetches upload-url, uploads to S3, posts translate-transcript without voice_gender" do
+      upload_url_response = { "url" => "https://s3-fake.example.com/upload", "fields" => { "key" => "s3key-1" } }
+      stub_request(:get, "#{base_url}/v2/audio/upload-url")
+        .with(query: hash_including({}))
+        .to_return(
+          status: 200,
+          body: upload_url_response.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+      stub_request(:post, "#{base_url}/v2/audio/translate-transcript").to_return(
+        status: 200,
+        body: audio_content.to_json,
+        headers: { "Content-Type" => "application/json" }
+      )
+      Tempfile.create(["audio", ".mp3"]) do |f|
+        f.write("audio content")
+        f.rewind
+        result = audio.upload_for_transcription(
+          file_path: f.path, filename: "test.mp3", target: "de-DE", source: "en-US", style: "fluid"
+        )
+        expect(result).to be_a(Lara::Models::Audio)
+        expect(result.id).to eq(audio_id)
+        expect(s3_double).to have_received(:upload).with(url: upload_url_response["url"],
+                                                         fields: upload_url_response["fields"], io: f.path)
+        expect(WebMock).to(have_requested(:post, "#{base_url}/v2/audio/translate-transcript")
+          .with do |req|
+            body = JSON.parse(req.body)
+            expect(body["s3key"]).to eq("s3key-1")
+            expect(body["target"]).to eq("de-DE")
+            expect(body["source"]).to eq("en-US")
+            expect(body["style"]).to eq("fluid")
+            expect(body).not_to have_key("voice_gender")
+            true
+          end)
+      end
+    end
+
+    it "sends X-No-Trace when no_trace true" do
+      upload_url_response = { "url" => "https://s3-fake.example.com/upload", "fields" => { "key" => "k1" } }
+      stub_request(:get, "#{base_url}/v2/audio/upload-url")
+        .with(query: hash_including({}))
+        .to_return(
+          status: 200,
+          body: upload_url_response.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+      stub_request(:post, "#{base_url}/v2/audio/translate-transcript").to_return(
+        status: 200,
+        body: audio_content.to_json,
+        headers: { "Content-Type" => "application/json" }
+      )
+      Tempfile.create(["audio", ".mp3"]) do |f|
+        f.rewind
+        audio.upload_for_transcription(file_path: f.path, filename: "x.mp3", target: "it",
+                                       no_trace: true)
+        expect(WebMock).to have_requested(:post, "#{base_url}/v2/audio/translate-transcript")
+          .with(headers: { "X-No-Trace" => "true" })
+      end
+    end
+  end
+
+  describe "#get_translated_transcript" do
+    it "GETs translated-transcript without target query and returns AudioTextResult" do
+      stub_request(:get, "#{base_url}/v2/audio/#{audio_id}/translated-transcript").to_return(
+        status: 200,
+        body: transcript_content.to_json,
+        headers: { "Content-Type" => "application/json" }
+      )
+      result = audio.get_translated_transcript(audio_id)
+      expect(result).to be_a(Lara::Models::AudioTextResult)
+      expect(result.translation).to eq("Hallo Welt")
+      expect(result.segments.length).to eq(1)
+      expect(result.segments.first.end).to eq(2.5)
+      expect(WebMock).to have_requested(:get,
+                                        "#{base_url}/v2/audio/#{audio_id}/translated-transcript")
+        .with(query: {})
+    end
+  end
+
+  describe "#translate_transcript" do
+    it "uploads, polls until translated, returns AudioTextResult" do
+      upload_url_response = { "url" => "https://s3-fake.example.com/upload", "fields" => { "key" => "k1" } }
+      stub_request(:get, "#{base_url}/v2/audio/upload-url")
+        .with(query: hash_including({}))
+        .to_return(
+          status: 200,
+          body: upload_url_response.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+      stub_request(:post, "#{base_url}/v2/audio/translate-transcript").to_return(
+        status: 200,
+        body: audio_content.merge("status" => "translated").to_json,
+        headers: { "Content-Type" => "application/json" }
+      )
+      stub_request(:get, "#{base_url}/v2/audio/#{audio_id}").to_return(
+        status: 200,
+        body: audio_content.merge("status" => "translated").to_json,
+        headers: { "Content-Type" => "application/json" }
+      )
+      stub_request(:get, "#{base_url}/v2/audio/#{audio_id}/translated-transcript").to_return(
+        status: 200,
+        body: transcript_content.to_json,
+        headers: { "Content-Type" => "application/json" }
+      )
+      audio.instance_variable_set(:@polling_interval, 0)
+      Tempfile.create(["audio", ".mp3"]) do |f|
+        f.rewind
+        result = audio.translate_transcript(file_path: f.path, filename: "test.mp3",
+                                            target: "de-DE")
+        expect(result).to be_a(Lara::Models::AudioTextResult)
+        expect(result.translation).to eq("Hallo Welt")
+      end
+    end
+  end
 end

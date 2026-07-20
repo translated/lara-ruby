@@ -52,5 +52,52 @@ module Lara
         @error_reason = error_reason
       end
     end
+
+    # Audio text segment for transcript results
+    class AudioTextSegment < Base
+      attr_reader :id, :start, :text, :translation
+
+      # JSON field is "end"; expose as #end to match the wire contract / other SDKs.
+      attr_reader :end
+
+      def initialize(id: nil, start: nil, end_time: nil, text: nil, translation: nil, **kwargs)
+        super()
+        @id = id
+        @start = start
+        @end = end_time.nil? ? (kwargs[:end] || kwargs["end"]) : end_time
+        @text = text
+        @translation = translation
+      end
+    end
+
+    # Audio text result for transcript translation
+    class AudioTextResult < Base
+      attr_reader :id, :source, :target, :filename, :duration, :text, :translation, :segments
+
+      def initialize(id: nil, source: nil, target: nil, filename: nil, duration: nil, text: nil,
+                     translation: nil, segments: nil, **_kwargs)
+        super()
+        @id = id
+        @source = source
+        @target = target
+        @filename = filename
+        @duration = duration
+        @text = text
+        @translation = translation
+        @segments = Array(segments).map do |seg|
+          if seg.is_a?(Hash)
+            AudioTextSegment.new(
+              id: seg["id"] || seg[:id],
+              start: seg["start"] || seg[:start],
+              end_time: seg["end"] || seg[:end],
+              text: seg["text"] || seg[:text],
+              translation: seg["translation"] || seg[:translation]
+            )
+          else
+            seg
+          end
+        end
+      end
+    end
   end
 end

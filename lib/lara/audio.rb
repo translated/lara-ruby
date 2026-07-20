@@ -93,6 +93,76 @@ module Lara
       end
     end
 
+    # Uploads an audio file to S3 and creates a transcript translation job.
+    # @return [Lara::Models::Audio]
+    def upload_for_transcription(file_path:, filename:, target:, source: nil, adapt_to: nil, glossaries: nil,
+                                 no_trace: false, style: nil)
+      response_data = @client.get("/v2/audio/upload-url", params: { filename: filename })
+      url = response_data["url"]
+      fields = response_data["fields"]
+
+      @s3.upload(url: url, fields: fields, io: file_path)
+
+      body = {
+        s3key: fields["key"],
+        target: target,
+        source: source,
+        adapt_to: adapt_to,
+        glossaries: glossaries,
+        style: style
+      }.compact
+
+      headers = {}
+      headers["X-No-Trace"] = "true" if no_trace
+
+      response = @client.post("/v2/audio/translate-transcript", body: body, headers: headers)
+      response_params = response.transform_keys(&:to_sym)
+      Lara::Models::Audio.new(**filter_audio_params(response_params))
+    end
+
+    # Retrieves the translated transcript JSON.
+    # @return [Lara::Models::AudioTextResult]
+    def get_translated_transcript(id)
+      response = @client.get("/v2/audio/#{id}/translated-transcript")
+      Lara::Models::AudioTextResult.new(
+        id: response["id"],
+        source: response["source"],
+        target: response["target"],
+        filename: response["filename"],
+        duration: response["duration"],
+        text: response["text"],
+        translation: response["translation"],
+        segments: response["segments"]
+      )
+    end
+
+    # Translates an audio transcript end-to-end
+    # @return [Lara::Models::AudioTextResult]
+    def translate_transcript(file_path:, filename:, target:, source: nil, adapt_to: nil, glossaries: nil,
+                             no_trace: false, style: nil)
+      audio = upload_for_transcription(file_path: file_path, filename: filename, target: target, source: source,
+                                       adapt_to: adapt_to, glossaries: glossaries, no_trace: no_trace, style: style)
+
+      max_wait_time = 60 * 15 # 15 minutes
+      start = Time.now
+
+      loop do |_|
+        current = status(audio.id)
+
+        case current.status
+        when Lara::Models::AudioStatus::TRANSLATED
+          return get_translated_transcript(current.id)
+        when Lara::Models::AudioStatus::ERROR
+          raise Lara::LaraApiError.new(500, "AudioError",
+                                       current.error_reason || "Unknown error")
+        end
+
+        raise Timeout::Error if Time.now - start > max_wait_time
+
+        sleep @polling_interval
+      end
+    end
+
     private
 
     def filter_audio_params(params)

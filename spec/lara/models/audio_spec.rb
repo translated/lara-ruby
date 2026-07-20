@@ -50,3 +50,31 @@ RSpec.describe Lara::Models::Audio do
     end
   end
 end
+
+RSpec.describe Lara::Models::AudioTextResult do
+  describe "#initialize" do
+    it "maps segments and exposes end from wire end field" do
+      result = described_class.new(
+        id: "aud_1",
+        source: "en-US",
+        target: "de-DE",
+        filename: "test.mp3",
+        duration: 30.5,
+        text: "Hello",
+        translation: "Hallo",
+        segments: [
+          { "id" => 1, "start" => 0.0, "end" => 2.5, "text" => "Hello", "translation" => "Hallo" }
+        ]
+      )
+      expect(result.segments.length).to eq(1)
+      expect(result.segments.first.end).to eq(2.5)
+      expect(result.segments.first.text).to eq("Hello")
+    end
+
+    it "tolerates missing fields" do
+      result = described_class.new
+      expect(result.segments).to eq([])
+      expect(result.translation).to be_nil
+    end
+  end
+end
