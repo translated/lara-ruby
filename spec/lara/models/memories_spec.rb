@@ -14,13 +14,14 @@ RSpec.describe Lara::Models::Memory do
         external_id: "ext_3De4Fg5Hi6Jk7Lm8No9Pq",
         secret: nil,
         collaborators_count: 0,
-        shared_at: nil
+        shared_at: "2024-01-15T12:00:00Z"
       )
       expect(m.id).to eq("mem_0Ab1Cd2Ef3Gh4Ij5Kl6Mn")
       expect(m.name).to eq("My Memory")
       expect(m.owner_id).to eq("acc_1XyZ2Ab3Cd4Ef5Gh6Ij7Kl")
       expect(m.created_at).to be_a(Time)
       expect(m.updated_at).to be_a(Time)
+      expect(m.shared_at).to be_a(Time)
       expect(m.external_id).to eq("ext_3De4Fg5Hi6Jk7Lm8No9Pq")
     end
 
@@ -29,18 +30,30 @@ RSpec.describe Lara::Models::Memory do
         id: "mem_0Ab1Cd2Ef3Gh4Ij5Kl6Mn",
         name: "My Memory",
         owner_id: "acc_1XyZ2Ab3Cd4Ef5Gh6Ij7Kl",
+        shared_at: "2024-01-15T12:00:00Z",
         is_personal: true
       )
       expect(m.is_personal).to be(true)
     end
 
-    it "leaves is_personal nil when omitted" do
+    it "defaults is_personal to false when omitted" do
       m = described_class.new(
         id: "mem_0Ab1Cd2Ef3Gh4Ij5Kl6Mn",
         name: "Team Memory",
+        owner_id: "acc_1XyZ2Ab3Cd4Ef5Gh6Ij7Kl",
+        shared_at: "2024-01-15T12:00:00Z"
+      )
+      expect(m.is_personal).to be(false)
+    end
+
+    it "allows shared_at to be omitted" do
+      memory = described_class.new(
+        id: "mem_0Ab1Cd2Ef3Gh4Ij5Kl6Mn",
+        name: "My Memory",
         owner_id: "acc_1XyZ2Ab3Cd4Ef5Gh6Ij7Kl"
       )
-      expect(m.is_personal).to be_nil
+
+      expect(memory.shared_at).to be_nil
     end
   end
 end

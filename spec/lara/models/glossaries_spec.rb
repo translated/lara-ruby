@@ -10,13 +10,15 @@ RSpec.describe Lara::Models::Glossary do
         name: "My Glossary",
         owner_id: "acc_1XyZ2Ab3Cd4Ef5Gh6Ij7Kl",
         created_at: "2024-01-15T10:00:00Z",
-        updated_at: "2024-01-15T11:00:00Z"
+        updated_at: "2024-01-15T11:00:00Z",
+        shared_at: "2024-01-15T12:00:00Z"
       )
       expect(g.id).to eq("gls_1Bc2De3Fg4Hi5Jk6Lm7No")
       expect(g.name).to eq("My Glossary")
       expect(g.owner_id).to eq("acc_1XyZ2Ab3Cd4Ef5Gh6Ij7Kl")
       expect(g.created_at).to be_a(Time)
       expect(g.updated_at).to be_a(Time)
+      expect(g.shared_at).to be_a(Time)
     end
 
     it "maps is_personal from API responses" do
@@ -24,18 +26,30 @@ RSpec.describe Lara::Models::Glossary do
         id: "gls_1Bc2De3Fg4Hi5Jk6Lm7No",
         name: "My Glossary",
         owner_id: "acc_1XyZ2Ab3Cd4Ef5Gh6Ij7Kl",
+        shared_at: "2024-01-15T12:00:00Z",
         is_personal: true
       )
       expect(g.is_personal).to be(true)
     end
 
-    it "leaves is_personal nil when omitted" do
+    it "defaults is_personal to false when omitted" do
       g = described_class.new(
         id: "gls_1Bc2De3Fg4Hi5Jk6Lm7No",
         name: "Team Glossary",
+        owner_id: "acc_1XyZ2Ab3Cd4Ef5Gh6Ij7Kl",
+        shared_at: "2024-01-15T12:00:00Z"
+      )
+      expect(g.is_personal).to be(false)
+    end
+
+    it "allows shared_at to be omitted" do
+      glossary = described_class.new(
+        id: "gls_1Bc2De3Fg4Hi5Jk6Lm7No",
+        name: "My Glossary",
         owner_id: "acc_1XyZ2Ab3Cd4Ef5Gh6Ij7Kl"
       )
-      expect(g.is_personal).to be_nil
+
+      expect(glossary.shared_at).to be_nil
     end
   end
 end

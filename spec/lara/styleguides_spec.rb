@@ -116,4 +116,14 @@ RSpec.describe Lara::Styleguides do
       expect(sg.content).to eq(updated_content)
     end
   end
+
+  it_behaves_like "a shareable resource" do
+    let(:resource_api) { styleguides }
+    let(:resource_path) { "/v2/styleguides" }
+    let(:resource_id) { "stg_1Bc2De3Fg4Hi5Jk6Lm7No" }
+    let(:resource_content) { styleguide_content }
+    let(:resource_key) { :styleguide }
+    let(:resource_model) { Lara::Models::Styleguide }
+    let(:shares_model) { Lara::Models::StyleguideShares }
+  end
 end

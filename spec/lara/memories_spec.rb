@@ -281,4 +281,14 @@ RSpec.describe Lara::Memories do
       expect(yielded.progress).to eq(1.0)
     end
   end
+
+  it_behaves_like "a shareable resource" do
+    let(:resource_api) { memories }
+    let(:resource_path) { "/v2/memories" }
+    let(:resource_id) { "mem_0Ab1Cd2Ef3Gh4Ij5Kl6Mn" }
+    let(:resource_content) { memory_content }
+    let(:resource_key) { :memory }
+    let(:resource_model) { Lara::Models::Memory }
+    let(:shares_model) { Lara::Models::MemoryShares }
+  end
 end

@@ -57,6 +57,35 @@ module Lara
                                                body: { name: name }).transform_keys(&:to_sym))
     end
 
+    # @return [Lara::Models::GlossaryShares]
+    def get_shares(id)
+      Lara::Models::GlossaryShares.new(**@client.get("/v2/glossaries/#{id}/shares").transform_keys(&:to_sym))
+    end
+
+    def add_account_share(id, name: nil)
+      glossary_from(@client.post("/v2/glossaries/#{id}/shares", body: { name: name }.compact))
+    end
+
+    def rename_account_share(id, name:)
+      glossary_from(@client.put("/v2/glossaries/#{id}/shares", body: { name: name }))
+    end
+
+    def revoke_account_share(id)
+      glossary_from(@client.delete("/v2/glossaries/#{id}/shares"))
+    end
+
+    def add_group_share(id, group_id, name: nil)
+      glossary_from(@client.post("/v2/glossaries/#{id}/shares/groups/#{group_id}", body: { name: name }.compact))
+    end
+
+    def rename_group_share(id, group_id, name:)
+      glossary_from(@client.put("/v2/glossaries/#{id}/shares/groups/#{group_id}", body: { name: name }))
+    end
+
+    def revoke_group_share(id, group_id)
+      glossary_from(@client.delete("/v2/glossaries/#{id}/shares/groups/#{group_id}"))
+    end
+
     # @return [Lara::Models::GlossaryCounts]
     def counts(id)
       Lara::Models::GlossaryCounts.new(**@client.get("/v2/glossaries/#{id}/counts").transform_keys(&:to_sym))
@@ -168,6 +197,12 @@ module Lara
 
       Lara::Models::GlossaryImport.new(**@client.delete("/v2/glossaries/#{glossary_id}/content",
                                                         body: body).transform_keys(&:to_sym))
+    end
+
+    private
+
+    def glossary_from(response)
+      Lara::Models::Glossary.new(**response.transform_keys(&:to_sym))
     end
   end
 end

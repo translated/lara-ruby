@@ -69,6 +69,35 @@ module Lara
       models.first
     end
 
+    # @return [Lara::Models::MemoryShares]
+    def get_shares(id)
+      Lara::Models::MemoryShares.new(**@client.get("/v2/memories/#{id}/shares").transform_keys(&:to_sym))
+    end
+
+    def add_account_share(id, name: nil)
+      memory_from(@client.post("/v2/memories/#{id}/shares", body: { name: name }.compact))
+    end
+
+    def rename_account_share(id, name:)
+      memory_from(@client.put("/v2/memories/#{id}/shares", body: { name: name }))
+    end
+
+    def revoke_account_share(id)
+      memory_from(@client.delete("/v2/memories/#{id}/shares"))
+    end
+
+    def add_group_share(id, group_id, name: nil)
+      memory_from(@client.post("/v2/memories/#{id}/shares/groups/#{group_id}", body: { name: name }.compact))
+    end
+
+    def rename_group_share(id, group_id, name:)
+      memory_from(@client.put("/v2/memories/#{id}/shares/groups/#{group_id}", body: { name: name }))
+    end
+
+    def revoke_group_share(id, group_id)
+      memory_from(@client.delete("/v2/memories/#{id}/shares/groups/#{group_id}"))
+    end
+
     # @return [Lara::Models::MemoryImport]
     def add_translation(id_or_ids, source:, target:, sentence:, translation:, tuid: nil,
                         sentence_before: nil, sentence_after: nil, headers: nil)
@@ -165,6 +194,12 @@ module Lara
         yield current if block_given?
       end
       current
+    end
+
+    private
+
+    def memory_from(response)
+      Lara::Models::Memory.new(**response.transform_keys(&:to_sym))
     end
   end
 end

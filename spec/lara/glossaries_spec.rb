@@ -296,4 +296,14 @@ RSpec.describe Lara::Glossaries do
       expect(imp.id).to eq("imp-3")
     end
   end
+
+  it_behaves_like "a shareable resource" do
+    let(:resource_api) { glossaries }
+    let(:resource_path) { "/v2/glossaries" }
+    let(:resource_id) { "gls_1Bc2De3Fg4Hi5Jk6Lm7No" }
+    let(:resource_content) { glossary_content }
+    let(:resource_key) { :glossary }
+    let(:resource_model) { Lara::Models::Glossary }
+    let(:shares_model) { Lara::Models::GlossaryShares }
+  end
 end

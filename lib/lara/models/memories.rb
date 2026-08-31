@@ -21,7 +21,8 @@ module Lara
         @secret = secret
         @collaborators_count = collaborators_count
         @shared_at = Base.parse_time(shared_at)
-        @is_personal = is_personal
+        # The API sends is_personal: true and omits the key otherwise; it never sends false or null.
+        @is_personal = is_personal || false
       end
     end
 

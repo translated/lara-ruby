@@ -115,10 +115,10 @@ module Lara
     end
 
     class Styleguide < Base
-      attr_reader :id, :name, :content, :owner_id, :created_at, :updated_at, :is_personal
+      attr_reader :id, :name, :content, :owner_id, :created_at, :updated_at, :shared_at, :is_personal
 
       def initialize(id:, name:, content: nil, owner_id: nil, created_at: nil, updated_at: nil,
-                     is_personal: nil, **_kwargs)
+                     shared_at: nil, is_personal: nil, **_kwargs)
         super()
         @id = id
         @name = name
@@ -126,7 +126,9 @@ module Lara
         @owner_id = owner_id
         @created_at = Base.parse_time(created_at)
         @updated_at = Base.parse_time(updated_at)
-        @is_personal = is_personal
+        @shared_at = Base.parse_time(shared_at)
+        # The API sends is_personal: true and omits the key otherwise; it never sends false or null.
+        @is_personal = is_personal || false
       end
 
       def to_s

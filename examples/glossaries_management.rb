@@ -13,6 +13,7 @@ require "lara"
 # - Import status checking
 # - Add or replace glossary entries (with and without GUID)
 # - Delete glossary entries (by term or by GUID)
+# - Sharing a glossary with the account or a group (add, rename, list, revoke)
 
 def main
   # All examples can use environment variables for credentials:
@@ -264,6 +265,55 @@ def main
     rescue StandardError => e
       puts "Error deleting entry: #{e.message}\n"
     end
+    # Example 9: Glossary sharing
+    # Sharing requires a multi-user account and the appropriate role (account owner for
+    # account-wide shares, owner/admin for group shares). Each call returns the shared
+    # glossary, whose `name` reflects the shared copy's name and `shared_at` the share time.
+    puts "=== Glossary Sharing ==="
+    begin
+      # Share with the whole account/team (the optional name: names the shared copy)
+      team_share = lara.glossaries.add_account_share(glossary_id, name: "Shared with the team")
+      puts "🤝 Shared with the account as: '#{team_share.name}' (shared at #{team_share.shared_at})"
+
+      # Rename the account/team share
+      renamed_team_share = lara.glossaries.rename_account_share(glossary_id, name: "Team glossary")
+      puts "📝 Renamed account share to: '#{renamed_team_share.name}'"
+
+      # List every share visible to the caller: the account share, group shares and user shares
+      shares = lara.glossaries.get_shares(glossary_id)
+      if shares.account
+        puts "👥 Account share '#{shares.account.share_name}' (#{shares.account.permissions})"
+      end
+      shares.groups.each do |group|
+        puts "👥 Group #{group.name}: '#{group.share_name}' (#{group.permissions})"
+      end
+      shares.users.each do |user|
+        puts "👤 User #{user.name}: '#{user.share_name}' (#{user.permissions})"
+      end
+
+      # Revoke the account/team share
+      lara.glossaries.revoke_account_share(glossary_id)
+      puts "🚫 Revoked the account share"
+
+      # Group shares work the same way, addressed by a group ID (grp_...)
+      group_id = ENV.fetch("LARA_GROUP_ID", nil) # Replace with an actual group ID
+      if group_id
+        group_share = lara.glossaries.add_group_share(glossary_id, group_id, name: "Shared with the group")
+        puts "🤝 Shared with group #{group_id} as: '#{group_share.name}'"
+
+        lara.glossaries.rename_group_share(glossary_id, group_id, name: "Marketing group")
+        puts "📝 Renamed the group share"
+
+        lara.glossaries.revoke_group_share(glossary_id, group_id)
+        puts "🚫 Revoked the group share"
+      else
+        puts "Set LARA_GROUP_ID to try the group sharing methods."
+      end
+      puts
+    rescue StandardError => e
+      puts "Error sharing glossary: #{e.message}"
+    end
+
   rescue StandardError => e
     puts "Error creating glossary: #{e.message}\n"
     return

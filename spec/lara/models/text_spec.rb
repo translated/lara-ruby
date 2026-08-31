@@ -22,6 +22,26 @@ RSpec.describe Lara::Models::TextBlock do
   end
 end
 
+RSpec.describe Lara::Models::Styleguide do
+  describe "#initialize" do
+    it "parses shared_at" do
+      styleguide = described_class.new(
+        id: "stg_1Bc2De3Fg4Hi5Jk6Lm7No",
+        name: "My Styleguide",
+        shared_at: "2024-01-15T12:00:00Z"
+      )
+
+      expect(styleguide.shared_at).to be_a(Time)
+    end
+
+    it "allows shared_at to be omitted" do
+      styleguide = described_class.new(id: "stg_1Bc2De3Fg4Hi5Jk6Lm7No", name: "My Styleguide")
+
+      expect(styleguide.shared_at).to be_nil
+    end
+  end
+end
+
 RSpec.describe Lara::Models::TextResult do
   describe ".from_hash" do
     it "returns nil for nil" do

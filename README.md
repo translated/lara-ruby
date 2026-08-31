@@ -424,6 +424,14 @@ delete_job = lara.memories.delete_translation(
 
 # Wait for import completion
 completed_import = lara.memories.wait_for_import(memory_import, max_wait_time: 300)  # 5 minutes
+
+# Share with the account or a group; shares can be renamed, listed, and revoked
+lara.memories.add_account_share(memory.id, name: "Team memory")
+lara.memories.rename_account_share(memory.id, name: "Company memory")
+lara.memories.add_group_share(memory.id, "grp_1A2b3C4d5E6f7G8h9I0jKl", name: "Marketing memory")
+shares = lara.memories.get_shares(memory.id)
+lara.memories.revoke_group_share(memory.id, "grp_1A2b3C4d5E6f7G8h9I0jKl")
+lara.memories.revoke_account_share(memory.id)
 ```
 
 ### 🔄 Async Memory Import & Export
@@ -513,6 +521,11 @@ export_job = lara.glossaries.export_async(
 
 # Get glossary terms count (includes both unidirectional and multidirectional counts)
 counts = lara.glossaries.counts("gls_1A2b3C4d5E6f7G8h9I0jKl")
+
+# Glossaries support the same account and group sharing workflow
+lara.glossaries.add_account_share(glossary.id, name: "Team glossary")
+glossary_shares = lara.glossaries.get_shares(glossary.id)
+lara.glossaries.revoke_account_share(glossary.id)
 ```
 
 ### 🎨 Styleguides
@@ -547,6 +560,10 @@ updated = lara.styleguides.update(
   name: "FinalName",
   content: "Use clear and concise language. Avoid jargon."
 )
+
+# Share a styleguide and inspect visible account, group, and user shares
+lara.styleguides.add_group_share(styleguide.id, "grp_1A2b3C4d5E6f7G8h9I0jKl", name: "Marketing styleguide")
+styleguide_shares = lara.styleguides.get_shares(styleguide.id)
 
 # Delete a styleguide
 deleted = lara.styleguides.delete("stg_1A2b3C4d5E6f7G8h9I0jKl")
