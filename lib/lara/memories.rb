@@ -144,20 +144,14 @@ module Lara
       end
     end
 
+    # @param gzip [Boolean] Whether the supplied file is already gzip-compressed; defaults to false
     # @return [Lara::Models::MemoryImport]
-    def import_tmx(id, tmx_path, callback_url: nil)
-      require "stringio"
-      require "zlib"
+    def import_tmx(id, tmx_path, gzip: false, callback_url: nil)
       basename = File.basename(tmx_path)
-
-      buffer = StringIO.new
-      gz = Zlib::GzipWriter.new(buffer, 7, Zlib::DEFAULT_STRATEGY)
-      File.open(tmx_path, "rb") { |_f| IO.copy_stream(_f, gz) }
-      gz.finish
-      buffer.rewind
-
-      files = { "tmx" => Faraday::UploadIO.new(buffer, "application/gzip", "#{basename}.gz") }
-      body = { "compression" => "gzip" }
+      mime_type = gzip ? "application/gzip" : "application/xml"
+      files = { "tmx" => Faraday::UploadIO.new(tmx_path, mime_type, basename) }
+      body = {}
+      body["compression"] = "gzip" if gzip
       body["callback_url"] = callback_url if callback_url
       Lara::Models::MemoryImport.new(**@client.post("/v2/memories/#{id}/import",
                                                     body: body, files: files).transform_keys(&:to_sym))

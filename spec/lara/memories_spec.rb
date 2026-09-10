@@ -177,7 +177,7 @@ RSpec.describe Lara::Memories do
   end
 
   describe "#import_tmx" do
-    it "uploads gzipped tmx and returns MemoryImport" do
+    it "uploads tmx unchanged by default and returns MemoryImport" do
       memory_id = "mem_0Ab1Cd2Ef3Gh4Ij5Kl6Mn"
       import_content = { "id" => "imp-1", "channel" => "main", "size" => 100, "progress" => 0 }
       stub_request(:post, "#{base_url}/v2/memories/#{memory_id}/import").to_return(
@@ -191,6 +191,9 @@ RSpec.describe Lara::Memories do
         imp = memories.import_tmx(memory_id, f.path)
         expect(imp).to be_a(Lara::Models::MemoryImport)
         expect(imp.id).to eq("imp-1")
+        expect(WebMock).to(have_requested(:post, "#{base_url}/v2/memories/#{memory_id}/import").with { |req|
+          req.body.include?("<tmx></tmx>") && !req.body.include?("compression")
+        })
       end
     end
 

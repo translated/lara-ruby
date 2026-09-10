@@ -94,7 +94,7 @@ module Lara
 
     # Import options are independent keyword arguments; omitted options use their defaults.
     # @param content_type [String] One of FileFormat.all; defaults to UNIDIRECTIONAL
-    # @param gzip [Boolean] When true, compress the glossary file before upload and set compression=gzip
+    # @param gzip [Boolean] Whether the supplied file is already gzip-compressed; defaults to false
     # @param callback_url [String,nil] Optional URL notified when the import completes
     # @return [Lara::Models::GlossaryImport]
     def import_file(id, file_path, content_type: FileFormat::UNIDIRECTIONAL, gzip: false,
@@ -104,23 +104,16 @@ module Lara
       end
 
       basename = File.basename(file_path)
-      if gzip
-        require "stringio"
-        require "zlib"
-
-        buffer = StringIO.new
-        gz = Zlib::GzipWriter.new(buffer, 7, Zlib::DEFAULT_STRATEGY)
-        File.open(file_path, "rb") { |_f| IO.copy_stream(_f, gz) }
-        gz.finish
-        buffer.rewind
-
-        body = { "compression" => "gzip" }
-        files = { "csv" => Faraday::UploadIO.new(buffer, "application/gzip", "#{basename}.gz") }
-      else
-        body = {}
-        mime_type = content_type == FileFormat::TBX ? "application/xml" : "text/csv"
-        files = { "csv" => Faraday::UploadIO.new(file_path, mime_type, basename) }
-      end
+      mime_type = if gzip
+                    "application/gzip"
+                  elsif content_type == FileFormat::TBX
+                    "application/xml"
+                  else
+                    "text/csv"
+                  end
+      files = { "csv" => Faraday::UploadIO.new(file_path, mime_type, basename) }
+      body = {}
+      body["compression"] = "gzip" if gzip
 
       body["content_type"] = content_type unless content_type == FileFormat::UNIDIRECTIONAL
       body["callback_url"] = callback_url if callback_url

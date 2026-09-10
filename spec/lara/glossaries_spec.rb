@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "tempfile"
+require "zlib"
 require "spec_helper"
 
 RSpec.describe Lara::Glossaries do
@@ -142,7 +143,7 @@ RSpec.describe Lara::Glossaries do
       end
     end
 
-    it "uploads gzipped csv when gzip is true" do
+    it "uploads already gzipped csv unchanged when gzip is true" do
       glossary_id = "gls_1Bc2De3Fg4Hi5Jk6Lm7No"
       import_content = { "id" => "imp-1", "channel" => "main", "size" => 50, "progress" => 0 }
       stub_request(:post, "#{base_url}/v2/glossaries/#{glossary_id}/import").to_return(
@@ -151,13 +152,15 @@ RSpec.describe Lara::Glossaries do
         headers: { "Content-Type" => "application/json" }
       )
       Tempfile.create(["test", ".csv"]) do |f|
-        f.write("term,translation\nhello,ciao")
+        compressed = Zlib.gzip("term,translation\nhello,ciao")
+        f.binmode
+        f.write(compressed)
         f.rewind
         imp = glossaries.import_csv(glossary_id, f.path, gzip: true)
         expect(imp.id).to eq("imp-1")
         expect(WebMock).to(have_requested(:post,
                                           "#{base_url}/v2/glossaries/#{glossary_id}/import").with do |req|
-          req.body.include?("compression")
+          req.body.include?("compression") && req.body.b.include?(compressed)
         end)
       end
     end

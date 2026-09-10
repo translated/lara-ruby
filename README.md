@@ -467,8 +467,8 @@ glossary = lara.glossaries.create("MyGlossary")
 # Import unidirectional CSV from file (use Lara::Glossaries::FileFormat::TBX for TBX files)
 glossary_import = lara.glossaries.import_file("gls_1A2b3C4d5E6f7G8h9I0jKl", "/path/to/your/glossary.csv")
 
-# Options are independent keyword arguments. gzip defaults to false; true compresses the input.
-# A callback does not require an explicit format or gzip flag:
+# Options are independent keyword arguments.
+# A callback can be supplied on its own:
 # lara.glossaries.import_file(glossary.id, "/path/to/your/glossary.csv", callback_url: callback_url)
 
 # Import multidirectional CSV from file

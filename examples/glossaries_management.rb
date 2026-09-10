@@ -130,11 +130,6 @@ def main
                                                           callback_url: callback_url)
         puts "Import started with ID: #{import_with_callback.id} (callback: #{callback_url})"
 
-        # You can also combine content_type, gzip, and callback_url:
-        # lara.glossaries.import_file(glossary_id, csv_file_path,
-        #                            content_type: Lara::Glossaries::FileFormat::MULTIDIRECTIONAL,
-        #                            gzip: true,
-        #                            callback_url: callback_url)
         puts
       rescue StandardError => e
         puts "Error starting CSV import with callback: #{e.message}\n"
