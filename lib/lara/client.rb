@@ -218,7 +218,7 @@ module Lara
       return response.body if raw_response
 
       content_type = response.headers["content-type"] || response.headers["Content-Type"]
-      return response.body if content_type&.include?("text/csv")
+      return response.body if content_type&.include?("text/csv") || content_type&.include?("application/xml")
 
       if callback || (body && body[:reasoning])
         parse_stream_response(response.body, &callback)

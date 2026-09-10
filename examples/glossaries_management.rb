@@ -99,7 +99,7 @@ def main
 
     if File.exist?(csv_file_path)
       puts "Importing CSV file: #{File.basename(csv_file_path)}"
-      csv_import = lara.glossaries.import_csv(glossary_id, csv_file_path)
+      csv_import = lara.glossaries.import_file(glossary_id, csv_file_path)
       puts "Import started with ID: #{csv_import.id}"
       puts "Initial progress: #{(csv_import.progress * 100).round}%"
 
@@ -126,12 +126,12 @@ def main
     if File.exist?(csv_file_path)
       begin
         callback_url = "https://your-server.example.com/lara/import-callback" # Replace with your endpoint
-        import_with_callback = lara.glossaries.import_csv(glossary_id, csv_file_path,
+        import_with_callback = lara.glossaries.import_file(glossary_id, csv_file_path,
                                                           callback_url: callback_url)
         puts "Import started with ID: #{import_with_callback.id} (callback: #{callback_url})"
 
         # You can also combine content_type, gzip, and callback_url:
-        # lara.glossaries.import_csv(glossary_id, csv_file_path,
+        # lara.glossaries.import_file(glossary_id, csv_file_path,
         #                            content_type: Lara::Glossaries::FileFormat::MULTIDIRECTIONAL,
         #                            gzip: true,
         #                            callback_url: callback_url)

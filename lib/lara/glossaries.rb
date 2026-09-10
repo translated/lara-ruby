@@ -6,10 +6,11 @@ module Lara
     module FileFormat
       UNIDIRECTIONAL = "csv/table-uni"
       MULTIDIRECTIONAL = "csv/table-multi"
+      TBX = "tbx"
 
       # @return [Array<String>] All supported formats
       def self.all
-        [UNIDIRECTIONAL, MULTIDIRECTIONAL]
+        [UNIDIRECTIONAL, MULTIDIRECTIONAL, TBX]
       end
 
       # @param format [String] The format to validate
@@ -91,24 +92,25 @@ module Lara
       Lara::Models::GlossaryCounts.new(**@client.get("/v2/glossaries/#{id}/counts").transform_keys(&:to_sym))
     end
 
-    # @param content_type [String] Either FileFormat::UNIDIRECTIONAL or FileFormat::MULTIDIRECTIONAL
-    # @param gzip [Boolean] When true, compress the CSV before upload and set compression=gzip
+    # Import options are independent keyword arguments; omitted options use their defaults.
+    # @param content_type [String] One of FileFormat.all; defaults to UNIDIRECTIONAL
+    # @param gzip [Boolean] When true, compress the glossary file before upload and set compression=gzip
     # @param callback_url [String,nil] Optional URL notified when the import completes
     # @return [Lara::Models::GlossaryImport]
-    def import_csv(id, csv_path, content_type: FileFormat::UNIDIRECTIONAL, gzip: false,
-                   callback_url: nil)
+    def import_file(id, file_path, content_type: FileFormat::UNIDIRECTIONAL, gzip: false,
+                    callback_url: nil)
       unless FileFormat.valid?(content_type)
         raise ArgumentError, "Invalid content_type. Supported formats: #{FileFormat.all.join(', ')}"
       end
 
-      basename = File.basename(csv_path)
+      basename = File.basename(file_path)
       if gzip
         require "stringio"
         require "zlib"
 
         buffer = StringIO.new
         gz = Zlib::GzipWriter.new(buffer, 7, Zlib::DEFAULT_STRATEGY)
-        File.open(csv_path, "rb") { |_f| IO.copy_stream(_f, gz) }
+        File.open(file_path, "rb") { |_f| IO.copy_stream(_f, gz) }
         gz.finish
         buffer.rewind
 
@@ -116,13 +118,24 @@ module Lara
         files = { "csv" => Faraday::UploadIO.new(buffer, "application/gzip", "#{basename}.gz") }
       else
         body = {}
-        files = { "csv" => Faraday::UploadIO.new(csv_path, "text/csv", basename) }
+        mime_type = content_type == FileFormat::TBX ? "application/xml" : "text/csv"
+        files = { "csv" => Faraday::UploadIO.new(file_path, mime_type, basename) }
       end
 
       body["content_type"] = content_type unless content_type == FileFormat::UNIDIRECTIONAL
       body["callback_url"] = callback_url if callback_url
       Lara::Models::GlossaryImport.new(**@client.post("/v2/glossaries/#{id}/import",
                                                       body: body, files: files).transform_keys(&:to_sym))
+    end
+
+    # @deprecated Use #import_file instead.
+    def import_csv(id, csv_path, content_type: FileFormat::UNIDIRECTIONAL, gzip: false,
+                   callback_url: nil)
+      warn "[DEPRECATION] import_csv is deprecated; use import_file instead.", uplevel: 1
+      unless [FileFormat::UNIDIRECTIONAL, FileFormat::MULTIDIRECTIONAL].include?(content_type)
+        raise ArgumentError, "import_csv only supports CSV formats; use import_file for TBX files."
+      end
+      import_file(id, csv_path, content_type: content_type, gzip: gzip, callback_url: callback_url)
     end
 
     # @return [Lara::Models::GlossaryImport]
@@ -146,10 +159,10 @@ module Lara
       current
     end
 
-    # Exports a csv file with the glossary content.
-    # @param content_type [String] Either FileFormat::UNIDIRECTIONAL or FileFormat::MULTIDIRECTIONAL
-    # @param source [String, nil] Optional source language
-    # @return [String] bytes
+    # Exports the glossary in the requested format.
+    # @param content_type [String] One of the formats returned by FileFormat.all
+    # @param source [String, nil] Required for unidirectional CSV; omit for multidirectional CSV and TBX
+    # @return [String] Raw CSV or TBX content
     def export(id, content_type: FileFormat::UNIDIRECTIONAL, source: nil)
       unless FileFormat.valid?(content_type)
         raise ArgumentError, "Invalid content_type. Supported formats: #{FileFormat.all.join(', ')}"
@@ -160,8 +173,8 @@ module Lara
     end
 
     # @param callback_url [String] URL notified when the export is ready
-    # @param content_type [String] Either FileFormat::UNIDIRECTIONAL or FileFormat::MULTIDIRECTIONAL
-    # @param source [String, nil] Optional source language (unidirectional exports only)
+    # @param content_type [String] One of the formats returned by FileFormat.all
+    # @param source [String, nil] Required for unidirectional CSV; omit for multidirectional CSV and TBX
     # @return [Lara::Models::GlossaryExport]
     def export_async(id, callback_url:, content_type: FileFormat::UNIDIRECTIONAL, source: nil)
       unless FileFormat.valid?(content_type)
