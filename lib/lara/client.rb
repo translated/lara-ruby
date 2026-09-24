@@ -92,6 +92,15 @@ module Lara
 
     def request(method, path, body: nil, files: nil, headers: nil, params: nil,
                 raw_response: false, &callback)
+      file_positions = (files || {}).each_with_object({}) do |(name, file), positions|
+        next unless file.respond_to?(:pos) && file.respond_to?(:seek)
+
+        begin
+          positions[name] = file.pos
+        rescue IOError, SystemCallError
+          # Non-seekable uploads can still be sent once.
+        end
+      end
       ensure_valid_token
 
       make_request(method, path, body: body, files: files, headers: headers, params: params,
@@ -100,6 +109,8 @@ module Lara
       raise unless e.status_code == 401
 
       @auth_mutex.synchronize { refresh_or_reauthenticate }
+      # Multipart encoding consumed the files; replay their original bytes.
+      file_positions.each { |name, position| files[name].seek(position) }
       make_request(method, path, body: body, files: files, headers: headers, params: params,
                                  raw_response: raw_response, &callback)
     end

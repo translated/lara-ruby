@@ -46,10 +46,12 @@ module Lara
     # @param glossaries [Array<String>, nil] Glossary IDs to apply.
     # @param style [String, nil] Translation style ("faithful", "fluid", "creative").
     # @param verbose [Boolean] If true, includes match details in the response.
+    # @param include_layout [Boolean] When true, includes complete geometry and styling on every
+    #   paragraph independently of verbose.
     # @param no_trace [Boolean] If true, disables request tracing.
     # @return [Lara::Models::ImageTextResult]
     def translate_text(file_path:, target:, source: nil, adapt_to: nil, glossaries: nil,
-                       style: nil, verbose: false, no_trace: false)
+                       style: nil, verbose: false, no_trace: false, include_layout: false)
       image_upload = Faraday::Multipart::FilePart.new(file_path, mime_type_for(file_path))
 
       body = {
@@ -58,7 +60,8 @@ module Lara
         adapt_to: adapt_to&.to_json,
         glossaries: glossaries&.to_json,
         style: style,
-        verbose: verbose.to_s
+        verbose: verbose.to_s,
+        include_layout: include_layout.to_s
       }.compact
 
       headers = {}
@@ -67,6 +70,27 @@ module Lara
       result = @client.post("/v2/images/translate-text", body: body, files: { image: image_upload },
                                                          headers: headers)
       Lara::Models::ImageTextResult.from_hash(result)
+    end
+
+    # Renders supplied translations onto the original image without translating again.
+    # Overlay and inpainting require ImageLayoutParagraph instances. Generative models
+    # accept either ImageParagraph or ImageLayoutParagraph. An omitted model defaults
+    # to generative_fast.
+    # @param paragraphs [Array<Lara::Models::ImageParagraph>] Text and translations to render.
+    # @return [String] Binary image data.
+    def render_translated(file_path:, target:, paragraphs:, source: nil, model: nil, no_trace: false)
+      image_upload = Faraday::Multipart::FilePart.new(file_path, mime_type_for(file_path))
+      body = {
+        source: source,
+        target: target,
+        paragraphs: paragraphs.map(&:to_render_hash).to_json,
+        model: model
+      }.compact
+      headers = {}
+      headers["X-No-Trace"] = "true" if no_trace
+
+      @client.post("/v2/images/render-translated", body: body, files: { image: image_upload },
+                                               headers: headers, raw_response: true)
     end
 
     private

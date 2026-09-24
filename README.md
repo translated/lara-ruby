@@ -346,6 +346,36 @@ result.paragraphs.each do |paragraph|
 end
 ```
 
+Request layout independently of verbose match details, then render the supplied translations:
+
+```ruby
+result = lara.images.translate_text(
+  file_path: "image.png", source: "en", target: "fr", include_layout: true
+)
+paragraphs = result.paragraphs.dup
+if paragraphs.first
+  paragraph = paragraphs.first
+  paragraphs[0] = Lara::Models::ImageLayoutParagraph.new(
+    text: paragraph.text, translation: "Bonjour !", bbox: paragraph.bbox,
+    lines_bboxes: paragraph.lines_bboxes, text_info: paragraph.text_info,
+    alignment: paragraph.alignment
+  )
+end
+rendered = lara.images.render_translated(
+  file_path: "image.png", source: result.source_language, target: "fr",
+  paragraphs: paragraphs, model: "overlay"
+)
+File.binwrite("rendered.png", rendered)
+```
+
+When `include_layout: true`, every paragraph is an `ImageLayoutParagraph`, extending `ImageParagraph`,
+and contains the complete metadata required by classic rendering models.
+Rendering uses the supplied translations without translating again and defaults to `GENERATIVE_FAST`.
+Pass `model` and `no_trace` to configure rendering. `OVERLAY` and `INPAINTING` require complete layout
+on every paragraph; generative models accept text-only paragraphs or complete layout.
+Memory and glossary matches are omitted from rendering requests.
+
+
 ### 🔊 Audio Translation
 #### Simple audio translation
 

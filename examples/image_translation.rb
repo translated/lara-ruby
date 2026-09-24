@@ -86,7 +86,8 @@ def main
       target: target_lang,
       adapt_to: ["mem_1A2b3C4d5E6f7G8h9I0jKl"], # Replace with actual memory IDs
       glossaries: ["gls_1A2b3C4d5E6f7G8h9I0jKl"], # Replace with actual glossary IDs
-      style: "faithful"
+      style: "faithful",
+      include_layout: true
     )
 
     puts "✅ Extract and translate completed"
@@ -98,6 +99,13 @@ def main
       puts "Original: #{paragraph.text}"
       puts "Translated: #{paragraph.translation}"
     end
+
+    # include_layout guarantees the metadata required by classic rendering models.
+    rendered = lara.images.render_translated(
+      file_path: sample_file_path, source: result.source_language, target: target_lang,
+      paragraphs: result.paragraphs, model: "overlay"
+    )
+    File.binwrite("rendered_image.png", rendered)
   rescue StandardError => e
     puts "Error extracting and translating text: #{e.message}"
   end

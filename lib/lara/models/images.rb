@@ -18,6 +18,51 @@ module Lara
       end
     end
 
+    # Four corners, each an [x, y] pair of pixel coordinates.
+    class ImageBBox < Base
+      attr_reader :top_left, :top_right, :bottom_right, :bottom_left
+
+      def initialize(top_left:, top_right:, bottom_right:, bottom_left:)
+        super()
+        @top_left = top_left
+        @top_right = top_right
+        @bottom_right = bottom_right
+        @bottom_left = bottom_left
+      end
+
+      def self.from_hash(hash)
+        new(top_left: hash["top_left"] || hash["topLeft"],
+            top_right: hash["top_right"] || hash["topRight"],
+            bottom_right: hash["bottom_right"] || hash["bottomRight"],
+            bottom_left: hash["bottom_left"] || hash["bottomLeft"])
+      end
+
+      def to_render_hash
+        { top_left: top_left, top_right: top_right, bottom_right: bottom_right, bottom_left: bottom_left }
+      end
+    end
+
+    # Original text direction (ltr, rtl, or ttb) and colors.
+    class ImageTextInfo < Base
+      attr_reader :direction, :text_color, :background_color
+
+      def initialize(direction:, text_color:, background_color:)
+        super()
+        @direction = direction
+        @text_color = text_color
+        @background_color = background_color
+      end
+
+      def self.from_hash(hash)
+        new(direction: hash["direction"], text_color: hash["text_color"] || hash["textColor"],
+            background_color: hash["background_color"] || hash["backgroundColor"])
+      end
+
+      def to_render_hash
+        { direction: direction, text_color: text_color, background_color: background_color }
+      end
+    end
+
     class ImageParagraph < Base
       attr_reader :text, :translation, :adapted_to_matches, :glossaries_matches
 
@@ -27,6 +72,29 @@ module Lara
         @translation = translation
         @adapted_to_matches = adapted_to_matches
         @glossaries_matches = glossaries_matches
+      end
+
+      def to_render_hash
+        { text: text, translation: translation }
+      end
+    end
+
+    class ImageLayoutParagraph < ImageParagraph
+      attr_reader :bbox, :lines_bboxes, :text_info, :alignment
+
+      def initialize(text:, translation:, bbox:, lines_bboxes:, text_info:, alignment:,
+                     adapted_to_matches: nil, glossaries_matches: nil)
+        super(text: text, translation: translation, adapted_to_matches: adapted_to_matches,
+              glossaries_matches: glossaries_matches)
+        @bbox = bbox
+        @lines_bboxes = lines_bboxes
+        @text_info = text_info
+        @alignment = alignment
+      end
+
+      def to_render_hash
+        super.merge(bbox: bbox.to_render_hash, lines_bboxes: lines_bboxes.map(&:to_render_hash),
+                    text_info: text_info.to_render_hash, alignment: alignment)
       end
     end
 
@@ -39,8 +107,8 @@ module Lara
         paragraphs = (hash["paragraphs"] || []).map { |p| build_paragraph(p) }
 
         new(
-          source_language: hash["sourceLanguage"],
-          adapted_to: hash["adaptedTo"],
+          source_language: hash["source_language"] || hash["sourceLanguage"],
+          adapted_to: hash["adapted_to"] || hash["adaptedTo"],
           glossaries: hash["glossaries"],
           paragraphs: paragraphs
         )
@@ -50,15 +118,30 @@ module Lara
         private
 
         def build_paragraph(paragraph_hash)
-          adapted_to_matches = convert_matches(paragraph_hash["adaptedToMatches"], NGMemoryMatch)
-          glossaries_matches = convert_matches(paragraph_hash["glossariesMatches"], NGGlossaryMatch)
+          adapted_to_matches = convert_matches(
+            paragraph_hash["adapted_to_matches"] || paragraph_hash["adaptedToMatches"], NGMemoryMatch
+          )
+          glossaries_matches = convert_matches(
+            paragraph_hash["glossaries_matches"] || paragraph_hash["glossariesMatches"], NGGlossaryMatch
+          )
 
-          ImageParagraph.new(
+          attributes = {
             text: paragraph_hash["text"],
             translation: paragraph_hash["translation"],
             adapted_to_matches: adapted_to_matches,
             glossaries_matches: glossaries_matches
-          )
+          }
+          bbox = paragraph_hash["bbox"]
+          lines_bboxes = paragraph_hash["lines_bboxes"] || paragraph_hash["linesBboxes"]
+          text_info = paragraph_hash["text_info"] || paragraph_hash["textInfo"]
+          alignment = paragraph_hash["alignment"]
+          if bbox && lines_bboxes && text_info && alignment
+            ImageLayoutParagraph.new(**attributes, bbox: ImageBBox.from_hash(bbox),
+                                     lines_bboxes: lines_bboxes.map { |box| ImageBBox.from_hash(box) },
+                                     text_info: ImageTextInfo.from_hash(text_info), alignment: alignment)
+          else
+            ImageParagraph.new(**attributes)
+          end
         end
 
         def convert_matches(value, klass)
