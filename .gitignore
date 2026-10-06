@@ -32,3 +32,7 @@ Thumbs.db
 # Bundled gems
 vendor/bundle/
 /Gemfile.lock
+
+# Python version tool
+__pycache__/
+*.py[cod]
