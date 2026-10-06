@@ -17,13 +17,13 @@ RSpec.shared_examples "a shareable resource" do
   let(:shares_path) { "#{resource_path}/#{resource_id}/shares" }
   let(:group_shares_path) { "#{shares_path}/groups/#{group_id}" }
 
-  def share_entry(id:, name:, permissions: "read_write")
+  def share_entry(id:, name:, permission_mask: "rw--")
     {
       "id" => id,
       "name" => name,
       "share_name" => "Shared #{name}",
       "shared_at" => "2024-02-01T10:00:00Z",
-      "permissions" => permissions
+      "permission_mask" => permission_mask
     }
   end
 
@@ -42,8 +42,8 @@ RSpec.shared_examples "a shareable resource" do
       stub_get(shares_path,
                resource_key.to_s => resource_content,
                "account" => share_entry(id: "acc_1XyZ2Ab3Cd4Ef5Gh6Ij7Kl", name: "Acme"),
-               "groups" => [share_entry(id: group_id, name: "Translators", permissions: "read")],
-               "users" => [share_entry(id: "usr_2Bc3De4Fg5Hi6Jk7Lm8No", name: "Jane", permissions: "read")])
+               "groups" => [share_entry(id: group_id, name: "Translators", permission_mask: "r---")],
+               "users" => [share_entry(id: "usr_2Bc3De4Fg5Hi6Jk7Lm8No", name: "Jane", permission_mask: "r---")])
 
       shares = resource_api.get_shares(resource_id)
 
@@ -54,10 +54,22 @@ RSpec.shared_examples "a shareable resource" do
       expect(shares.account.name).to eq("Acme")
       expect(shares.account.share_name).to eq("Shared Acme")
       expect(shares.account.shared_at).to eq(Time.iso8601("2024-02-01T10:00:00Z"))
-      expect(shares.account.permissions).to eq("read_write")
-      expect(shares.groups.map(&:permissions)).to eq(["read"])
+      expect(shares.account.permission_mask).to eq("rw--")
+      expect(shares.groups.map(&:permission_mask)).to eq(["r---"])
       expect(shares.groups.map(&:id)).to eq([group_id])
       expect(shares.users.map(&:name)).to eq(["Jane"])
+    end
+
+    ["r-es", nil].each do |mask|
+      it "returns #{mask.inspect} for the embedded resource's permission mask" do
+        content = resource_content.merge("permission_mask" => mask)
+        content.delete("permission_mask") if mask.nil?
+        stub_get(shares_path, resource_key.to_s => content)
+
+        shares = resource_api.get_shares(resource_id)
+
+        expect(shares.public_send(resource_key).permission_mask).to eq(mask)
+      end
     end
 
     it "defaults account, groups and users when the response omits them" do

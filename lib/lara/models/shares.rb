@@ -5,15 +5,16 @@ require_relative "base"
 module Lara
   module Models
     class ResourceShareEntry < Base
-      attr_reader :id, :name, :share_name, :shared_at, :permissions
+      attr_reader :id, :name, :share_name, :shared_at, :permission_mask
 
-      def initialize(id:, name:, share_name:, shared_at:, permissions:, **_kwargs)
+      def initialize(id:, name:, share_name:, shared_at:, permission_mask:, **_kwargs)
         super()
         @id = id
         @name = name
         @share_name = share_name
         @shared_at = Base.parse_time(shared_at)
-        @permissions = permissions
+        # The permissions stored on this share.
+        @permission_mask = permission_mask
       end
     end
 

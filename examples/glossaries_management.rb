@@ -277,13 +277,13 @@ def main
       # List every share visible to the caller: the account share, group shares and user shares
       shares = lara.glossaries.get_shares(glossary_id)
       if shares.account
-        puts "👥 Account share '#{shares.account.share_name}' (#{shares.account.permissions})"
+        puts "👥 Account share '#{shares.account.share_name}' (#{shares.account.permission_mask})"
       end
       shares.groups.each do |group|
-        puts "👥 Group #{group.name}: '#{group.share_name}' (#{group.permissions})"
+        puts "👥 Group #{group.name}: '#{group.share_name}' (#{group.permission_mask})"
       end
       shares.users.each do |user|
-        puts "👤 User #{user.name}: '#{user.share_name}' (#{user.permissions})"
+        puts "👤 User #{user.name}: '#{user.share_name}' (#{user.permission_mask})"
       end
 
       # Revoke the account/team share

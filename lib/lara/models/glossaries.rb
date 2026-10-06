@@ -5,10 +5,10 @@ require_relative "base"
 module Lara
   module Models
     class Glossary < Base
-      attr_reader :id, :name, :owner_id, :created_at, :updated_at, :shared_at, :is_personal
+      attr_reader :id, :name, :owner_id, :created_at, :updated_at, :shared_at, :is_personal, :permission_mask
 
       def initialize(id:, name:, owner_id:, created_at: nil, updated_at: nil, shared_at: nil,
-                     is_personal: nil, **_kwargs)
+                     is_personal: nil, permission_mask: nil, **_kwargs)
         super()
         @id = id
         @name = name
@@ -18,6 +18,9 @@ module Lara
         @shared_at = Base.parse_time(shared_at)
         # The API sends is_personal: true and omits the key otherwise; it never sends false or null.
         @is_personal = is_personal || false
+        # Effective combined mask in GET list/detail; selected share's stored mask in GET /shares.
+        # Nil when omitted, including non-GET responses.
+        @permission_mask = permission_mask
       end
     end
 
