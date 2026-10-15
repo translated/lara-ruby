@@ -115,10 +115,10 @@ module Lara
     end
 
     class Styleguide < Base
-      attr_reader :id, :name, :content, :owner_id, :created_at, :updated_at, :shared_at, :is_personal, :permission_mask
+      attr_reader :id, :name, :content, :owner_id, :created_at, :updated_at, :shared_at, :permission_mask
 
       def initialize(id:, name:, content: nil, owner_id: nil, created_at: nil, updated_at: nil,
-                     shared_at: nil, is_personal: nil, permission_mask: nil, **_kwargs)
+                     shared_at: nil, permission_mask: nil, **_kwargs)
         super()
         @id = id
         @name = name
@@ -127,8 +127,6 @@ module Lara
         @created_at = Base.parse_time(created_at)
         @updated_at = Base.parse_time(updated_at)
         @shared_at = Base.parse_time(shared_at)
-        # The API sends is_personal: true and omits the key otherwise; it never sends false or null.
-        @is_personal = is_personal || false
         # Effective combined mask in GET list/detail; selected share's stored mask in GET /shares.
         # Nil when omitted, including non-GET responses.
         @permission_mask = permission_mask

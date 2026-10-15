@@ -56,7 +56,6 @@ RSpec.describe Lara::Styleguides do
       expect(list.size).to eq(1)
       expect(list.first).to be_a(Lara::Models::Styleguide)
       expect(list.first.id).to eq("stg_1Bc2De3Fg4Hi5Jk6Lm7No")
-      expect(list.first.is_personal).to be(true)
     end
   end
 

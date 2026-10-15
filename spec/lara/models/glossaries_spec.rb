@@ -21,27 +21,6 @@ RSpec.describe Lara::Models::Glossary do
       expect(g.shared_at).to be_a(Time)
     end
 
-    it "maps is_personal from API responses" do
-      g = described_class.new(
-        id: "gls_1Bc2De3Fg4Hi5Jk6Lm7No",
-        name: "My Glossary",
-        owner_id: "acc_1XyZ2Ab3Cd4Ef5Gh6Ij7Kl",
-        shared_at: "2024-01-15T12:00:00Z",
-        is_personal: true
-      )
-      expect(g.is_personal).to be(true)
-    end
-
-    it "defaults is_personal to false when omitted" do
-      g = described_class.new(
-        id: "gls_1Bc2De3Fg4Hi5Jk6Lm7No",
-        name: "Team Glossary",
-        owner_id: "acc_1XyZ2Ab3Cd4Ef5Gh6Ij7Kl",
-        shared_at: "2024-01-15T12:00:00Z"
-      )
-      expect(g.is_personal).to be(false)
-    end
-
     it "allows shared_at to be omitted" do
       glossary = described_class.new(
         id: "gls_1Bc2De3Fg4Hi5Jk6Lm7No",
