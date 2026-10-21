@@ -224,3 +224,32 @@ RSpec.describe Lara::Models::DetectResult do
     expect(r.predictions).to eq([])
   end
 end
+
+RSpec.describe Lara::Models::TextWarnings do
+  it "preserves false and partial failure states and camel-case error status codes" do
+    error = { "statusCode" => 503, "message" => "Unavailable" }
+    warnings = described_class.new(
+      reasoning: { "applied" => false, "error" => error,
+                   "warnings" => [{ "code" => "image_context_unavailable", "message" => "Image unavailable" }] },
+      references: { "applied" => "partial", "error" => error },
+      prosa: { "applied" => false, "error" => error }
+    )
+    expect(warnings.reasoning.applied).to be(false)
+    expect(warnings.reasoning.error.status_code).to eq(503)
+    expect(warnings.reasoning.warnings.first.message).to eq("Image unavailable")
+    expect(warnings.references.applied).to eq("partial")
+    expect(warnings.prosa.applied).to be(false)
+    expect(warnings.prosa.error.message).to eq("Unavailable")
+  end
+
+  it "handles absent warnings and reasoning failures without image warnings" do
+    result = Lara::Models::TextResult.from_hash("translation" => "Aperto")
+    expect(result.warnings).to be_nil
+    warnings = described_class.new(reasoning: {
+      "applied" => false, "error" => { "status_code" => 500, "message" => "Failed" }
+    }, references: { "applied" => false, "error" => { "statusCode" => 500, "message" => "Failed" } })
+    expect(warnings.reasoning.warnings).to eq([])
+    expect(warnings.reasoning.error.status_code).to eq(500)
+    expect(warnings.references.applied).to be(false)
+  end
+end

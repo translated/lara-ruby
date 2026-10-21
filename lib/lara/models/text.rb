@@ -167,11 +167,73 @@ module Lara
       end
     end
 
+    class IntelligenceError < Base
+      attr_reader :status_code, :message
+
+      def initialize(status_code:, message:)
+        super()
+        @status_code = status_code
+        @message = message
+      end
+
+      def self.from_hash(hash)
+        return nil if hash.nil?
+
+        new(status_code: hash["statusCode"] || hash["status_code"], message: hash["message"])
+      end
+    end
+
+    class IntelligenceFailure < Base
+      attr_reader :applied, :error
+
+      def initialize(applied:, error:)
+        super()
+        @applied = applied
+        @error = IntelligenceError.from_hash(error)
+      end
+    end
+
+    # Applied is false or "partial" for reference retrieval failures.
+    class ReferenceRetrievalFailure < IntelligenceFailure
+    end
+
+    class ReasoningWarning < Base
+      attr_reader :code, :message
+
+      def initialize(code:, message:)
+        super()
+        @code = code
+        @message = message
+      end
+    end
+
+    class ReasoningFeedback < Base
+      attr_reader :applied, :error, :warnings
+
+      def initialize(applied:, error: nil, warnings: [])
+        super()
+        @applied = applied
+        @error = IntelligenceError.from_hash(error)
+        @warnings = warnings.map { |warning| ReasoningWarning.new(**warning.transform_keys(&:to_sym)) }
+      end
+    end
+
+    class TextWarnings < Base
+      attr_reader :reasoning, :references, :prosa
+
+      def initialize(reasoning: nil, references: nil, prosa: nil)
+        super()
+        @reasoning = ReasoningFeedback.new(**reasoning.transform_keys(&:to_sym)) if reasoning
+        @references = ReferenceRetrievalFailure.new(**references.transform_keys(&:to_sym)) if references
+        @prosa = IntelligenceFailure.new(**prosa.transform_keys(&:to_sym)) if prosa
+      end
+    end
+
     class TextResult < Base
       attr_reader :content_type, :source_language, :translation,
                   :adapted_to, :glossaries,
                   :adapted_to_matches, :glossaries_matches,
-                  :profanities, :styleguide_results
+                  :profanities, :styleguide_results, :warnings
 
       def self.from_hash(hash)
         return nil unless hash.is_a?(Hash)
@@ -198,13 +260,14 @@ module Lara
           adapted_to_matches: adapted_to_matches,
           glossaries_matches: glossaries_matches,
           profanities: profanities,
-          styleguide_results: styleguide_results
+          styleguide_results: styleguide_results,
+          warnings: hash["warnings"] && TextWarnings.new(**hash["warnings"].transform_keys(&:to_sym))
         )
       end
 
       def initialize(content_type:, source_language:, translation:, adapted_to: nil, glossaries: nil,
                      adapted_to_matches: nil, glossaries_matches: nil, profanities: nil,
-                     styleguide_results: nil)
+                     styleguide_results: nil, warnings: nil)
         super()
         @content_type = content_type
         @source_language = source_language
@@ -215,6 +278,7 @@ module Lara
         @glossaries_matches = glossaries_matches
         @profanities = profanities
         @styleguide_results = styleguide_results
+        @warnings = warnings
       end
 
       class << self

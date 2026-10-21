@@ -54,6 +54,46 @@ RSpec.describe Lara::Translator do
   end
 
   describe "#translate" do
+    [{ url: "https://example.com/storefront.png" },
+     [{ url: "data:image/png;base64,aW1hZ2U=" }], []].each do |context|
+      it "sends image context #{context.inspect} unchanged" do
+        stub_translate("translation" => "Aperto", "source_language" => "en-US", "content_type" => "text/plain")
+        translator.translate("Open", target: "it-IT", reasoning: true, image_context: context)
+        expect(WebMock).to(have_requested(:post, "#{base_url}/v2/translate").with do |request|
+          body = JSON.parse(request.body)
+          body["image_context"] == JSON.parse(context.to_json) && body["reasoning"] == true
+        end)
+      end
+    end
+
+    it "omits image context for text-only translation" do
+      stub_translate("translation" => "Aperto", "source_language" => "en-US", "content_type" => "text/plain")
+      translator.translate("Open", target: "it-IT")
+      expect(WebMock).to(have_requested(:post, "#{base_url}/v2/translate").with do |request|
+        !JSON.parse(request.body).key?("image_context")
+      end)
+    end
+
+    it "exposes image recovery warnings in callbacks and the final result" do
+      response = {
+        "content_type" => "text/plain", "source_language" => "en-US", "translation" => "Aperto",
+        "warnings" => { "reasoning" => { "applied" => true, "warnings" => [
+          { "code" => "image_context_unavailable", "message" => "Image unavailable" }
+        ] } }
+      }
+      allow(translator.client).to receive(:post).and_yield(response).and_return(response)
+      partials = []
+      result = translator.translate("Open", target: "it-IT", reasoning: true,
+                                            image_context: { url: "https://example.com/storefront.png" }) do |partial|
+        partials << partial
+      end
+      [partials.fetch(0), result].each do |value|
+        expect(value.warnings.reasoning.applied).to be(true)
+        expect(value.warnings.reasoning.error).to be_nil
+        expect(value.warnings.reasoning.warnings.first.code).to eq("image_context_unavailable")
+      end
+    end
+
     it "translates string and returns TextResult" do
       stub_translate("translation" => "Ciao", "source_language" => "en",
                      "content_type" => "text/plain")
