@@ -27,8 +27,8 @@ def main
     puts "Created styleguide: #{styleguide.name} (ID: #{styleguide.id})"
     styleguide_id = styleguide.id
 
-    styleguides = lara.styleguides.list
-    puts "Total styleguides: #{styleguides.length}"
+    styleguides = lara.styleguides.list_paginated
+    puts "Total styleguides: #{styleguides.total}"
     puts
 
     puts "=== Styleguide Operations ==="

@@ -25,10 +25,24 @@ module Lara
       @polling_interval = 2
     end
 
+    # @deprecated Use #list_paginated instead.
     # @return [Array<Lara::Models::Glossary>]
     def list
+      warn "[DEPRECATION] list is deprecated; use list_paginated instead.", uplevel: 1
       (@client.get("/v2/glossaries") || []).map do |_h|
         Lara::Models::Glossary.new(**_h.transform_keys(&:to_sym))
+      end
+    end
+
+    # Lists resources with optional name filtering and pagination.
+    # Without options, returns the complete collection without pagination.
+    # Any supplied option enables pagination; page and size default to 1 and 20.
+    # @param options [Lara::Models::ResourceQueryOptions,nil] Name filter and pagination
+    # @return [Lara::Models::CollectionResult] Collection containing Glossary objects
+    def list_paginated(options = nil)
+      params = options&.to_params || {}
+      @client.get_collection("/v2/glossaries", params: params) do |item|
+        Lara::Models::Glossary.new(**item.transform_keys(&:to_sym))
       end
     end
 

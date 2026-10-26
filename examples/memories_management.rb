@@ -49,8 +49,8 @@ def main
     puts
 
     # List all memories
-    memories = lara.memories.list
-    puts "📝 Total memories: #{memories.length}"
+    memories = lara.memories.list_paginated
+    puts "📝 Total memories: #{memories.total}"
 
     # Example 2: Adding translations
     # Important: To update/overwrite a translation unit you must provide a tuid. Calls without a tuid always create a new unit and will not update existing entries.

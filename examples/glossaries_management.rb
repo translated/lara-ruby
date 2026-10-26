@@ -40,8 +40,8 @@ def main
     glossary_id = glossary.id
 
     # List all glossaries
-    glossaries = lara.glossaries.list
-    puts "📝 Total glossaries: #{glossaries.length}"
+    glossaries = lara.glossaries.list_paginated
+    puts "📝 Total glossaries: #{glossaries.total}"
     puts
 
     # Example 2: Glossary operations

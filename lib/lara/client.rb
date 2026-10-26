@@ -56,6 +56,22 @@ module Lara
       request(:get, path, body: nil, headers: headers, params: params)
     end
 
+    # Retrieves a collection using pagination metadata from the response headers.
+    # @yield [Hash] Converts each resource to its SDK model
+    # @return [Lara::Models::CollectionResult]
+    def get_collection(path, params: nil)
+      items, headers = request(:get, path, params: params, with_metadata: true)
+      total = integer_header(headers, "x-total-count", minimum: 0)
+      raise LaraError, "Missing or invalid X-Total-Count response header" if total.nil?
+
+      Lara::Models::CollectionResult.new(
+        items: block_given? ? items.map { |item| yield item } : items,
+        total: total,
+        page: integer_header(headers, "x-page", minimum: 1),
+        size: integer_header(headers, "x-page-size", minimum: 1)
+      )
+    end
+
     # Sends a POST request to the Lara API.
     # @param path [String] The path to send the request to.
     # @param body [Hash,nil] The parameters to send with the request.
@@ -90,8 +106,19 @@ module Lara
 
     private
 
+    def integer_header(headers, name, minimum:)
+      value = headers.find { |key, _| key.downcase == name }&.last
+      return nil unless value.is_a?(String)
+
+      value = value.gsub(/\A[ \t]+|[ \t]+\z/, "")
+      return nil unless value.match?(/\A[0-9]+\z/)
+
+      number = value.to_i
+      number if number >= minimum
+    end
+
     def request(method, path, body: nil, files: nil, headers: nil, params: nil,
-                raw_response: false, &callback)
+                raw_response: false, with_metadata: false, &callback)
       file_positions = (files || {}).each_with_object({}) do |(name, file), positions|
         next unless file.respond_to?(:pos) && file.respond_to?(:seek)
 
@@ -104,7 +131,8 @@ module Lara
       ensure_valid_token
 
       make_request(method, path, body: body, files: files, headers: headers, params: params,
-                                 raw_response: raw_response, &callback)
+                                 raw_response: raw_response, with_metadata: with_metadata,
+                                 &callback)
     rescue LaraApiError => e
       raise unless e.status_code == 401
 
@@ -112,7 +140,8 @@ module Lara
       # Multipart encoding consumed the files; replay their original bytes.
       file_positions.each { |name, position| files[name].seek(position) }
       make_request(method, path, body: body, files: files, headers: headers, params: params,
-                                 raw_response: raw_response, &callback)
+                                 raw_response: raw_response, with_metadata: with_metadata,
+                                 &callback)
     end
 
     def ensure_valid_token
@@ -204,7 +233,7 @@ module Lara
     end
 
     def make_request(method, path, body: nil, files: nil, headers: nil, params: nil,
-                     raw_response: false, &callback)
+                     raw_response: false, with_metadata: false, &callback)
       path = "/#{path}" unless path.start_with?("/")
       request_headers = build_request_headers(body, files, headers)
 
@@ -225,6 +254,8 @@ module Lara
                  end
 
       raise LaraApiError.from_response(response) unless response.success?
+
+      return [parse_json(response.body), response.headers] if with_metadata
 
       return response.body if raw_response
 

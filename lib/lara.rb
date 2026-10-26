@@ -16,6 +16,8 @@ require_relative "lara/audio"
 
 # Models
 require_relative "lara/models/base"
+require_relative "lara/models/collection_result"
+require_relative "lara/models/resource_query_options"
 require_relative "lara/models/text"
 require_relative "lara/models/memories"
 require_relative "lara/models/glossaries"

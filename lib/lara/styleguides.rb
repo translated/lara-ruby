@@ -6,10 +6,24 @@ module Lara
       @client = client
     end
 
+    # @deprecated Use #list_paginated instead.
     # @return [Array<Lara::Models::Styleguide>]
     def list
+      warn "[DEPRECATION] list is deprecated; use list_paginated instead.", uplevel: 1
       (@client.get("/v2/styleguides") || []).map do |h|
         Lara::Models::Styleguide.new(**h.transform_keys(&:to_sym))
+      end
+    end
+
+    # Lists resources with optional name filtering and pagination.
+    # Without options, returns the complete collection without pagination.
+    # Any supplied option enables pagination; page and size default to 1 and 20.
+    # @param options [Lara::Models::ResourceQueryOptions,nil] Name filter and pagination
+    # @return [Lara::Models::CollectionResult] Collection containing Styleguide objects
+    def list_paginated(options = nil)
+      params = options&.to_params || {}
+      @client.get_collection("/v2/styleguides", params: params) do |item|
+        Lara::Models::Styleguide.new(**item.transform_keys(&:to_sym))
       end
     end
 

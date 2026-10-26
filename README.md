@@ -471,6 +471,29 @@ memory = lara.memories.create("MyMemory")
 # Create memory with external ID (MyMemory integration)
 memory = lara.memories.create("Memory from MyMemory", external_id: "aabb1122")  # Replace with actual external ID
 
+# list_paginated accepts an optional Lara::Models::ResourceQueryOptions object.
+# Without options, returns all memories; page and size are nil.
+# Providing search, page or size enables pagination.
+memory_result = lara.memories.list_paginated
+memories = memory_result.items
+memory_total = memory_result.total # Total matching resources across all pages
+
+# Page starts at 1; size ranges from 1 to 200.
+# The missing parameter defaults to page 1 or size 20.
+memory_page = lara.memories.list_paginated(Lara::Models::ResourceQueryOptions.new(page: 2, size: 50))
+memory_default_size = lara.memories.list_paginated(Lara::Models::ResourceQueryOptions.new(page: 2)) # Page 2, 20 per page
+memory_first_page = lara.memories.list_paginated(Lara::Models::ResourceQueryOptions.new(size: 50)) # Page 1, 50 per page
+puts memory_page.page # Current page (1-based)
+puts memory_page.size # Page size
+
+# Search filters the displayed name (case- and accent-insensitive).
+# It matches substrings, preserves spaces and accepts 1-255 characters.
+# Search alone enables pagination with page 1 and size 20.
+options = Lara::Models::ResourceQueryOptions.new(search: "Marketing", page: 2, size: 50)
+memory_search = lara.memories.list_paginated(options)
+
+# list is deprecated and emits a warning; use list_paginated instead.
+
 # Important: To update/overwrite a translation unit you must provide a tuid. Calls without a tuid always create a new unit and will not update existing entries.
 # Add translation to single memory
 memory_import = lara.memories.add_translation("mem_1A2b3C4d5E6f7G8h9I0jKl", "en-US", "fr-FR", "Hello", "Bonjour", tuid: "greeting_001")
@@ -534,6 +557,29 @@ export_job = lara.memories.export_async(
 ```ruby
 # Create glossary
 glossary = lara.glossaries.create("MyGlossary")
+
+# list_paginated accepts an optional Lara::Models::ResourceQueryOptions object.
+# Without options, returns all glossaries; page and size are nil.
+# Providing search, page or size enables pagination.
+glossary_result = lara.glossaries.list_paginated
+glossaries = glossary_result.items
+glossary_total = glossary_result.total # Total matching resources across all pages
+
+# Page starts at 1; size ranges from 1 to 200.
+# The missing parameter defaults to page 1 or size 20.
+glossary_page = lara.glossaries.list_paginated(Lara::Models::ResourceQueryOptions.new(page: 2, size: 50))
+glossary_default_size = lara.glossaries.list_paginated(Lara::Models::ResourceQueryOptions.new(page: 2)) # Page 2, 20 per page
+glossary_first_page = lara.glossaries.list_paginated(Lara::Models::ResourceQueryOptions.new(size: 50)) # Page 1, 50 per page
+puts glossary_page.page # Current page (1-based)
+puts glossary_page.size # Page size
+
+# Search filters the displayed name (case- and accent-insensitive).
+# It matches substrings, preserves spaces and accepts 1-255 characters.
+# Search alone enables pagination with page 1 and size 20.
+options = Lara::Models::ResourceQueryOptions.new(search: "Marketing", page: 2, size: 50)
+glossary_search = lara.glossaries.list_paginated(options)
+
+# list is deprecated and emits a warning; use list_paginated instead.
 
 # Import unidirectional CSV from file (use Lara::Glossaries::FileFormat::TBX for TBX files)
 glossary_import = lara.glossaries.import_file("gls_1A2b3C4d5E6f7G8h9I0jKl", "/path/to/your/glossary.csv")
@@ -614,8 +660,28 @@ styleguide = lara.styleguides.create(
   content: "Use a formal tone. Prefer British English spelling. Avoid contractions."
 )
 
-# List all styleguides
-styleguides = lara.styleguides.list
+# list_paginated accepts an optional Lara::Models::ResourceQueryOptions object.
+# Without options, returns all styleguides; page and size are nil.
+# Providing search, page or size enables pagination.
+styleguide_result = lara.styleguides.list_paginated
+styleguides = styleguide_result.items
+styleguide_total = styleguide_result.total # Total matching resources across all pages
+
+# Page starts at 1; size ranges from 1 to 200.
+# The missing parameter defaults to page 1 or size 20.
+styleguide_page = lara.styleguides.list_paginated(Lara::Models::ResourceQueryOptions.new(page: 2, size: 50))
+styleguide_default_size = lara.styleguides.list_paginated(Lara::Models::ResourceQueryOptions.new(page: 2)) # Page 2, 20 per page
+styleguide_first_page = lara.styleguides.list_paginated(Lara::Models::ResourceQueryOptions.new(size: 50)) # Page 1, 50 per page
+puts styleguide_page.page # Current page (1-based)
+puts styleguide_page.size # Page size
+
+# Search filters the displayed name (case- and accent-insensitive).
+# It matches substrings, preserves spaces and accepts 1-255 characters.
+# Search alone enables pagination with page 1 and size 20.
+options = Lara::Models::ResourceQueryOptions.new(search: "Marketing", page: 2, size: 50)
+styleguide_search = lara.styleguides.list_paginated(options)
+
+# list is deprecated and emits a warning; use list_paginated instead.
 
 # Get a specific styleguide by ID
 styleguide = lara.styleguides.get("stg_1A2b3C4d5E6f7G8h9I0jKl")
