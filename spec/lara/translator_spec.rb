@@ -54,6 +54,27 @@ RSpec.describe Lara::Translator do
   end
 
   describe "#translate" do
+    %w[low medium high].each do |effort|
+      it "sends #{effort} reasoning effort" do
+        stub_translate("translation" => "Ciao", "source_language" => "en-US", "content_type" => "text/plain")
+        translator.translate("Hello", target: "it-IT", reasoning: true, effort: effort)
+        expect(WebMock).to(have_requested(:post, "#{base_url}/v2/translate").with do |request|
+          body = JSON.parse(request.body)
+          body["effort"] == effort && body["reasoning"] == true
+        end)
+      end
+    end
+
+    [false, true].each do |reasoning|
+      it "omits unset effort with reasoning=#{reasoning}" do
+        stub_translate("translation" => "Ciao", "source_language" => "en-US", "content_type" => "text/plain")
+        translator.translate("Hello", target: "it-IT", reasoning: reasoning)
+        expect(WebMock).to(have_requested(:post, "#{base_url}/v2/translate").with do |request|
+          !JSON.parse(request.body).key?("effort")
+        end)
+      end
+    end
+
     [{ url: "https://example.com/storefront.png" },
      [{ url: "data:image/png;base64,aW1hZ2U=" }], []].each do |context|
       it "sends image context #{context.inspect} unchanged" do

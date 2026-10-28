@@ -245,6 +245,18 @@ result = lara.translate(
 )
 ```
 
+#### Reasoning Effort
+
+Set `effort` to `low`, `medium`, or `high` to control translation reasoning effort.
+Reasoning must be enabled. Omit the option to use the server default; the API
+validates the combination.
+
+```ruby
+result = lara.translate(
+  "Hello", source: "en-US", target: "it-IT", reasoning: true, effort: "high"
+)
+```
+
 #### Text Translation with Image Context
 
 Pass `image_context` to use an image as visual context for translating text, with reasoning enabled:

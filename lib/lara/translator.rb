@@ -56,6 +56,7 @@ module Lara
     # @param verbose [Boolean]
     # @param style [String,nil]
     # @param reasoning [Boolean] When true with a block, yields partial results during reasoning
+    # @param effort [String,nil] "low", "medium", or "high"; requires reasoning: true. Omit for the server default.
     # @param image_context [Hash,Array<Hash>,nil] One HTTPS or base64 PNG/JPEG/WebP image; requires reasoning when non-empty.
     #   Image validation is performed by the API. An empty array preserves text-only translation.
     # @param headers [Hash,nil]
@@ -67,7 +68,7 @@ module Lara
     def translate(text, target:, source: nil, source_hint: nil, adapt_to: nil, glossaries: nil,
                   instructions: nil, content_type: nil, multiline: true, timeout_ms: nil,
                   priority: nil, use_cache: nil, cache_ttl_s: nil, no_trace: false, verbose: false,
-                  style: nil, reasoning: false, image_context: nil, headers: nil, metadata: nil,
+                  style: nil, reasoning: false, effort: nil, image_context: nil, headers: nil, metadata: nil,
                   profanities_detect: nil, profanities_handling: nil,
                   styleguide_id: nil, styleguide_reasoning: nil,
                   styleguide_explanation_language: nil, &callback)
@@ -96,6 +97,7 @@ module Lara
         verbose: verbose,
         style: style,
         reasoning: reasoning,
+        effort: effort,
         image_context: image_context,
         metadata: metadata,
         profanities_detect: profanities_detect,
