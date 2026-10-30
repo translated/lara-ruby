@@ -47,7 +47,7 @@ module Lara
     # @param glossaries [Array<String>,nil]
     # @param instructions [Array<String>,nil]
     # @param content_type [String,nil]
-    # @param multiline [Boolean]
+    # @param multiline [Boolean,nil] Deprecated.
     # @param timeout_ms [Integer,nil]
     # @param priority [String,nil]
     # @param use_cache [String,Boolean,nil]
@@ -66,7 +66,7 @@ module Lara
     # @yield [Lara::Models::TextResult] Partial translation result (only when reasoning is true)
     # @return [Lara::Models::TextResult] Final translation result
     def translate(text, target:, source: nil, source_hint: nil, adapt_to: nil, glossaries: nil,
-                  instructions: nil, content_type: nil, multiline: true, timeout_ms: nil,
+                  instructions: nil, content_type: nil, multiline: nil, timeout_ms: nil,
                   priority: nil, use_cache: nil, cache_ttl_s: nil, no_trace: false, verbose: false,
                   style: nil, reasoning: false, effort: nil, image_context: nil, headers: nil, metadata: nil,
                   profanities_detect: nil, profanities_handling: nil,

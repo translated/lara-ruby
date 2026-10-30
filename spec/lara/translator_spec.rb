@@ -54,6 +54,28 @@ RSpec.describe Lara::Translator do
   end
 
   describe "#translate" do
+    [{}, { multiline: nil }].each do |options|
+      it "omits multiline for #{options.inspect}" do
+        stub_translate("translation" => "Ciao", "source_language" => "en",
+                       "content_type" => "text/plain")
+        translator.translate("Hello", target: "it", **options)
+        expect(WebMock).to(have_requested(:post, "#{base_url}/v2/translate").with do |request|
+          !JSON.parse(request.body).key?("multiline")
+        end)
+      end
+    end
+
+    [true, false].each do |multiline|
+      it "sends explicit multiline=#{multiline}" do
+        stub_translate("translation" => "Ciao", "source_language" => "en",
+                       "content_type" => "text/plain")
+        translator.translate("Hello", target: "it", multiline: multiline)
+        expect(WebMock).to(have_requested(:post, "#{base_url}/v2/translate").with do |request|
+          JSON.parse(request.body).fetch("multiline") == multiline
+        end)
+      end
+    end
+
     %w[low medium high].each do |effort|
       it "sends #{effort} reasoning effort" do
         stub_translate("translation" => "Ciao", "source_language" => "en-US", "content_type" => "text/plain")

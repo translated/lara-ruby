@@ -772,7 +772,6 @@ result = lara.translate(
   instructions: ["instruction"],            # Translation instructions
   style: "fluid",                           # Translation style (fluid, faithful, creative)
   content_type: "text/plain",               # Content type (text/plain, text/html, etc.)
-  multiline: true,                          # Enable multiline translation
   timeout_ms: 10000,                        # Request timeout in milliseconds
   no_trace: false,                          # Disable request tracing
   verbose: false,                           # Enable verbose response
