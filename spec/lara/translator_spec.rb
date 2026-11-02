@@ -79,7 +79,7 @@ RSpec.describe Lara::Translator do
     %w[low medium high].each do |effort|
       it "sends #{effort} reasoning effort" do
         stub_translate("translation" => "Ciao", "source_language" => "en-US", "content_type" => "text/plain")
-        translator.translate("Hello", target: "it-IT", reasoning: true, effort: effort)
+        translator.translate("Hello", target: "it-IT", reasoning: true, reasoning_effort: effort)
         expect(WebMock).to(have_requested(:post, "#{base_url}/v2/translate").with do |request|
           body = JSON.parse(request.body)
           body["effort"] == effort && body["reasoning"] == true
@@ -88,7 +88,7 @@ RSpec.describe Lara::Translator do
     end
 
     [false, true].each do |reasoning|
-      it "omits unset effort with reasoning=#{reasoning}" do
+      it "omits unset reasoning_effort with reasoning=#{reasoning}" do
         stub_translate("translation" => "Ciao", "source_language" => "en-US", "content_type" => "text/plain")
         translator.translate("Hello", target: "it-IT", reasoning: reasoning)
         expect(WebMock).to(have_requested(:post, "#{base_url}/v2/translate").with do |request|
